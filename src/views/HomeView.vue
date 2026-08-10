@@ -284,15 +284,22 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
     :deep(.general-info) {
       height: 100%;
+      padding-right: 8px;
+      padding-top: 12px;
+      padding-bottom: 12px;
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
     :deep(.general-card) {
       min-height: 0;
+      padding-top: 10px;
+      padding-bottom: 10px;
     }
 
     :deep(.world-map-section) {
-      padding-top: 16px;
+      padding-left: 8px;
+      padding-top: 12px;
+      padding-bottom: 12px;
     }
   }
 }
@@ -442,6 +449,10 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

@@ -61,7 +61,9 @@ function openExpandedMap(): void {
     >
       <div class="world-map-card__body">
         <div v-if="regionMarkers.length > 0" class="world-map__viewport">
-          <WorldMapChart :markers="regionMarkers" @node-click="handleNodeClick" />
+          <div class="world-map__chart">
+            <WorldMapChart :markers="regionMarkers" @node-click="handleNodeClick" />
+          </div>
 
           <button
             class="material-icon-button world-map__expand"
@@ -87,13 +89,13 @@ function openExpandedMap(): void {
 
 <style scoped lang="scss">
 .world-map-section {
-  padding: 0 16px 16px;
+  padding: 0 16px 12px;
 }
 
 .world-map-card {
   display: block;
   min-width: 0;
-  padding: var(--md-app-card-padding);
+  padding: 8px;
 }
 
 .world-map-card__body {
@@ -102,11 +104,21 @@ function openExpandedMap(): void {
 
 .world-map__viewport {
   position: relative;
-  /* 保持世界地图的自然横向比例；1:1 仅用于左右布局栏宽度。 */
-  aspect-ratio: 2.13 / 1;
+  display: flex;
+  justify-content: center;
+  /* 外层保持紧凑高度，实际地图由 .world-map__chart 保持正常比例。 */
+  aspect-ratio: 2.4 / 1;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.world-map__chart {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 2.13 / 1;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .world-map__expand {
@@ -129,7 +141,7 @@ function openExpandedMap(): void {
 
 .world-map__empty {
   display: flex;
-  aspect-ratio: 2.13 / 1;
+  aspect-ratio: 2.4 / 1;
   min-height: 0;
   flex-direction: column;
   align-items: center;
@@ -159,12 +171,12 @@ function openExpandedMap(): void {
 
 @media (max-width: 520px) {
   .world-map-card {
-    padding: 14px;
+    padding: 8px;
   }
 
   .world-map__viewport,
   .world-map__empty {
-    aspect-ratio: 2.13 / 1;
+    aspect-ratio: 2.4 / 1;
   }
 
   .world-map__expand {

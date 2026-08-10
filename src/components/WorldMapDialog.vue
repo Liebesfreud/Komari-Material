@@ -64,7 +64,9 @@ function handleNodeClick(node: NodeData): void {
     <div class="world-map-dialog__layout">
       <div class="world-map-dialog__map-panel">
         <div v-if="markers.length > 0" class="world-map-dialog__viewport">
-          <WorldMapChart :markers="markers" @node-click="handleNodeClick" />
+          <div class="world-map-dialog__chart">
+            <WorldMapChart :markers="markers" @node-click="handleNodeClick" />
+          </div>
         </div>
         <div v-else class="world-map-dialog__empty">
           <span class="material-symbols-rounded" aria-hidden="true">location_off</span>
@@ -172,6 +174,7 @@ function handleNodeClick(node: NodeData): void {
 <style scoped lang="scss">
 .world-map-dialog {
   min-width: 0;
+  --world-map-dialog-panel-height: min(64vh, 620px);
 }
 
 .world-map-dialog__layout {
@@ -184,21 +187,35 @@ function handleNodeClick(node: NodeData): void {
 
 .world-map-dialog__map-panel {
   min-width: 0;
-  padding-top: 4px;
+  padding-top: 0;
 }
 
 .world-map-dialog__viewport {
   position: relative;
-  aspect-ratio: 2.13 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--world-map-dialog-panel-height);
   min-width: 0;
   overflow: hidden;
   border-radius: 24px;
   background: var(--md-sys-color-surface-container);
 }
 
+.world-map-dialog__chart {
+  width: min(100%, calc(var(--world-map-dialog-panel-height) * 2.13));
+  aspect-ratio: 2.13 / 1;
+  min-width: 0;
+
+  :deep(.world-map-chart) {
+    width: 100%;
+    height: 100%;
+  }
+}
+
 .world-map-dialog__empty {
   display: flex;
-  aspect-ratio: 2.13 / 1;
+  height: var(--world-map-dialog-panel-height);
   min-height: 0;
   flex-direction: column;
   align-items: center;
@@ -229,7 +246,7 @@ function handleNodeClick(node: NodeData): void {
 
 .world-map-dialog__sidebar {
   min-width: 0;
-  max-height: min(64vh, 620px);
+  height: var(--world-map-dialog-panel-height);
   overflow: auto;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 24px;
@@ -471,7 +488,18 @@ function handleNodeClick(node: NodeData): void {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .world-map-dialog__viewport,
+  .world-map-dialog__empty {
+    height: auto;
+    aspect-ratio: 2.13 / 1;
+  }
+
+  .world-map-dialog__chart {
+    width: 100%;
+  }
+
   .world-map-dialog__sidebar {
+    height: auto;
     max-height: none;
   }
 }

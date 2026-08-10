@@ -23,6 +23,25 @@ const DASHBOARD_METRICS = [
   'ping.latency_ms',
 ] as const
 
+export interface DashboardTrafficSummary {
+  up: number
+  down: number
+}
+
+function isFiniteMetricValue(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function sumMetricValues(series: QueryMetricsResponse['series'], metricKey: string): number {
+  return series
+    .filter(item => item.metric_key === metricKey)
+    .reduce((total, item) => total + item.points.reduce((sum, point) => {
+      if (!isFiniteMetricValue(point.value))
+        return sum
+      return sum + Math.max(0, point.value)
+    }, 0), 0)
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof RpcError)
     return error.message
@@ -43,6 +62,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
   let requestId = 0
 
   const hasData = computed(() => metrics.value !== null || pingStats.value !== null)
+
+  const trafficLast24Hours = computed<DashboardTrafficSummary>(() => {
+    const series = metrics.value?.series ?? []
+    return {
+      up: sumMetricValues(series, 'traffic.up'),
+      down: sumMetricValues(series, 'traffic.down'),
+    }
+  })
 
   async function refresh(): Promise<void> {
     if (loading.value)
@@ -132,6 +159,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error,
     lastUpdated,
     hasData,
+    trafficLast24Hours,
     refresh,
   }
 })
