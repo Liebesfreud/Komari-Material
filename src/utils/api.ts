@@ -178,6 +178,16 @@ export interface PingRecordsResponse {
   tasks: PingTask[]
 }
 
+/** 管理后台数据库占用信息 */
+export interface DatabaseSizeInfo {
+  main?: {
+    size?: number
+  }
+  monitoring?: {
+    size?: number
+  }
+}
+
 /** 登录请求 */
 export interface LoginRequest {
   'username': string
@@ -447,6 +457,14 @@ export class KomariApi {
    */
   async getPingRecords(uuid: string, hours: number): Promise<PingRecordsResponse> {
     return this.get<PingRecordsResponse>('/records/ping', { uuid, hours })
+  }
+
+  /**
+   * 获取管理后台数据库占用信息
+   */
+  async getDatabaseSize(): Promise<DatabaseSizeInfo> {
+    const response = await this.getRaw<ApiResponse<DatabaseSizeInfo>>('/admin/database/size')
+    return response.data
   }
 }
 

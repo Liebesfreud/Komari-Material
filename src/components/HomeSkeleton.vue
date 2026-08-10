@@ -8,15 +8,21 @@ const appStore = useAppStore()
   <div class="home-skeleton" role="status" aria-live="polite" aria-busy="true">
     <span class="sr-only">正在加载节点数据</span>
 
-    <section
-      class="home-skeleton__general"
-      :class="{ 'home-skeleton__general--comfortable': appStore.materialDensity === 'comfortable' }"
-    >
-      <div v-for="index in 5" :key="`general-${index}`" class="home-skeleton__general-card">
-        <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--lg" />
-        <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--sm" />
-      </div>
-    </section>
+    <div class="home-skeleton__overview">
+      <section
+        class="home-skeleton__general"
+        :class="{ 'home-skeleton__general--comfortable': appStore.materialDensity === 'comfortable' }"
+      >
+        <div v-for="index in 6" :key="`general-${index}`" class="home-skeleton__general-card">
+          <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--lg" />
+          <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--sm" />
+        </div>
+      </section>
+
+      <section class="home-skeleton__world-map">
+        <div class="home-skeleton__pulse home-skeleton__world-map-body" />
+      </section>
+    </div>
 
     <div class="home-skeleton__divider md-wavy-divider" />
 
@@ -101,7 +107,27 @@ const appStore = useAppStore()
   }
 
   @media (min-width: 1024px) {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.home-skeleton__overview {
+  display: grid;
+  min-width: 0;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+
+    .home-skeleton__general {
+      height: 100%;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-skeleton__general-card {
+      min-height: 0;
+    }
   }
 }
 
@@ -129,6 +155,28 @@ const appStore = useAppStore()
   @media (min-width: 640px) {
     min-height: 150px;
   }
+}
+
+.home-skeleton__world-map {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin: 0 16px 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-app-card-radius);
+  padding: var(--md-app-card-padding);
+  background: var(--md-sys-color-surface-container);
+
+  @media (min-width: 1024px) {
+    margin-top: 16px;
+  }
+}
+
+.home-skeleton__world-map-body {
+  aspect-ratio: 2.13 / 1;
+  min-height: 0;
+  flex: 0 0 auto;
+  border-radius: 24px;
 }
 
 .home-skeleton__divider {

@@ -1,15 +1,31 @@
 <script setup lang="ts">
-import { useNow } from '@vueuse/core'
-import { computed } from 'vue'
+import type { NodeData } from '@/stores/nodes'
+import { useIntervalFn } from '@vueuse/core'
+import { computed, h, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
+import DashboardOverviewDialog from '@/components/DashboardOverviewDialog.vue'
 import { useAppStore } from '@/stores/app'
+import { useDashboardStore } from '@/stores/dashboard'
 import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
+import { getDaysUntilExpired } from '@/utils/tagHelper'
+
+const EXPIRING_SOON_DAYS = 7
+// 沿用 Komari 1.4.1 的黄色预警边界，统计需要关注的波动节点。
+const NETWORK_VOLATILITY_THRESHOLD = 0.3
+
+interface NetworkVolatilityEntry {
+  uuid: string
+  name: string
+  taskName: string
+  latency: number | null
+  volatility: number
+  loss: number
+  valid: number
+}
 
 const appStore = useAppStore()
+const dashboardStore = useDashboardStore()
 const nodesStore = useNodesStore()
-
-const now = useNow({ interval: 1000 })
-const currentTime = computed(() => now.value.toLocaleString())
 
 const totalSpeed = computed(() => {
   const onlineNodes = nodesStore.nodes.filter(node => node.online)
@@ -38,6 +54,73 @@ const formattedTrafficDown = computed(() => formatBytesSplit(totalTraffic.value.
 const formattedSpeedUp = computed(() => formatBytesPerSecondSplit(totalSpeed.value.up, appStore.byteDecimals))
 const formattedSpeedDown = computed(() => formatBytesPerSecondSplit(totalSpeed.value.down, appStore.byteDecimals))
 
+function getExpirationDays(node: NodeData): number | null {
+  if (!node.expired_at?.trim())
+    return null
+
+  const timestamp = new Date(node.expired_at).getTime()
+  if (!Number.isFinite(timestamp))
+    return null
+
+  return getDaysUntilExpired(node.expired_at)
+}
+
+const expiringNodes = computed(() => nodesStore.nodes
+  .flatMap((node) => {
+    const days = getExpirationDays(node)
+    if (days === null || days < 0 || days > EXPIRING_SOON_DAYS)
+      return []
+    return [{ node, days }]
+  })
+  .sort((left, right) => left.days - right.days))
+
+const networkStats = computed(() => dashboardStore.pingStats?.stats ?? [])
+const pingTaskNames = computed(() => new Map(
+  dashboardStore.pingTasks.map(task => [String(task.id), task.name]),
+))
+
+const networkVolatilityEntries = computed<NetworkVolatilityEntry[]>(() => networkStats.value
+  .filter(stat => stat.valid > 0
+    && typeof stat.p99_p50_ratio === 'number'
+    && Number.isFinite(stat.p99_p50_ratio))
+  .map((stat) => {
+    const node = nodesStore.nodes.find(item => item.uuid === stat.entity_id)
+    const volatility = stat.p99_p50_ratio ?? 0
+    return {
+      uuid: stat.entity_id,
+      name: node?.name ?? stat.entity_id.slice(0, 8),
+      taskName: pingTaskNames.value.get(String(stat.task_id)) ?? `Ping ${stat.task_id}`,
+      latency: typeof stat.p99 === 'number' && Number.isFinite(stat.p99)
+        ? stat.p99
+        : typeof stat.avg === 'number' && Number.isFinite(stat.avg) ? stat.avg : null,
+      volatility,
+      loss: typeof stat.loss === 'number' && Number.isFinite(stat.loss) ? stat.loss : 0,
+      valid: stat.valid,
+    }
+  })
+  .sort((left, right) => right.volatility - left.volatility || right.loss - left.loss))
+
+const networkVolatileNodeCount = computed(() => new Set(
+  networkVolatilityEntries.value
+    .filter(entry => entry.volatility >= NETWORK_VOLATILITY_THRESHOLD)
+    .map(entry => entry.uuid),
+).size)
+
+type DetailSection = 'renewal' | 'network'
+
+const detailTitles: Record<DetailSection, string> = {
+  renewal: '即将过期节点详情',
+  network: '网络波动节点详情',
+}
+
+function openDetail(section: DetailSection): void {
+  window.$modal.create({
+    title: detailTitles[section],
+    content: () => h(DashboardOverviewDialog, { section }),
+    size: 'medium',
+  })
+}
+
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 const cardBlurClass = computed(() => {
   if (!hasBackgroundBlur.value)
@@ -53,20 +136,27 @@ const cardBlurClass = computed(() => {
     return 'glass-20'
   return `glass-${radius}`
 })
+
+const { pause: pauseRefreshTimer, resume: resumeRefreshTimer } = useIntervalFn(
+  () => {
+    void dashboardStore.refresh()
+  },
+  5 * 60 * 1000,
+  { immediate: false },
+)
+
+onMounted(() => {
+  void dashboardStore.refresh()
+  resumeRefreshTimer()
+})
+
+onActivated(() => resumeRefreshTimer())
+onDeactivated(() => pauseRefreshTimer())
+onUnmounted(() => pauseRefreshTimer())
 </script>
 
 <template>
   <section class="general-info" :class="{ 'general-info--comfortable': appStore.materialDensity === 'comfortable' }">
-    <article class="md-card general-card" :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]">
-      <div class="general-card__value md-number">
-        {{ currentTime }}
-      </div>
-      <div class="general-card__label">
-        <span class="material-symbols-rounded">schedule</span>
-        当前时间
-      </div>
-    </article>
-
     <article class="md-card general-card" :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]">
       <div class="general-card__value md-number">
         {{ onlineNodeCount }}<span>/{{ nodesStore.nodes.length }}</span>
@@ -84,6 +174,46 @@ const cardBlurClass = computed(() => {
       <div class="general-card__label">
         <span class="material-symbols-rounded">public</span>
         点亮区域
+      </div>
+    </article>
+
+    <article
+      class="md-card md-card--interactive general-card"
+      :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-label="打开即将过期节点详情"
+      @click="openDetail('renewal')"
+      @keydown.enter.prevent="openDetail('renewal')"
+      @keydown.space.prevent="openDetail('renewal')"
+    >
+      <div class="general-card__value md-number">
+        {{ expiringNodes.length }}
+      </div>
+      <div class="general-card__label">
+        <span class="material-symbols-rounded">event</span>
+        即将过期节点
+      </div>
+    </article>
+
+    <article
+      class="md-card md-card--interactive general-card"
+      :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-label="打开近期网络波动节点详情"
+      @click="openDetail('network')"
+      @keydown.enter.prevent="openDetail('network')"
+      @keydown.space.prevent="openDetail('network')"
+    >
+      <div class="general-card__value md-number">
+        {{ networkVolatileNodeCount }}
+      </div>
+      <div class="general-card__label">
+        <span class="material-symbols-rounded">trending_up</span>
+        网络波动节点
       </div>
     </article>
 
@@ -131,6 +261,7 @@ const cardBlurClass = computed(() => {
 .general-info {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
+  min-width: 0;
   gap: var(--md-app-grid-gap);
   padding: 16px;
 
@@ -139,7 +270,7 @@ const cardBlurClass = computed(() => {
   }
 
   @media (min-width: 1024px) {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -159,6 +290,11 @@ const cardBlurClass = computed(() => {
     justify-content: space-between;
     padding: var(--md-app-card-padding);
   }
+}
+
+.general-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--md-sys-color-primary) 48%, transparent);
+  outline-offset: 2px;
 }
 
 .general-info--comfortable .general-card {
