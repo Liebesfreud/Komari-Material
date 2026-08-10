@@ -15,6 +15,7 @@ defineOptions({
 const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
 const NodeCompactList = defineAsyncComponent(() => import('@/components/NodeCompactList.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
+const LegacyNodeGeneralCards = defineAsyncComponent(() => import('@/components/LegacyNodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
 const WorldMap = defineAsyncComponent(() => import('@/components/WorldMap.vue'))
 
@@ -163,9 +164,17 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
         </div>
       </div>
 
-      <div class="home-view__overview">
-        <NodeGeneralCards />
-        <WorldMap @node-click="handleNodeClick" />
+      <div
+        class="home-view__overview"
+        :class="{ 'home-view__overview--legacy': appStore.topDataPanel === 'legacy' }"
+      >
+        <template v-if="appStore.topDataPanel === 'legacy'">
+          <LegacyNodeGeneralCards />
+        </template>
+        <template v-else>
+          <NodeGeneralCards />
+          <WorldMap @node-click="handleNodeClick" />
+        </template>
       </div>
 
       <div class="home-view__divider md-wavy-divider" />
@@ -300,6 +309,23 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
       padding-left: 8px;
       padding-top: 12px;
       padding-bottom: 12px;
+    }
+
+    &.home-view__overview--legacy {
+      display: block;
+
+      :deep(.general-info) {
+        height: auto;
+        grid-auto-flow: row;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-rows: none;
+        padding: 16px;
+      }
+
+      :deep(.general-card) {
+        min-height: 132px;
+        padding: var(--md-app-card-padding);
+      }
     }
   }
 }

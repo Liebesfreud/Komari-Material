@@ -8,18 +8,21 @@ const appStore = useAppStore()
   <div class="home-skeleton" role="status" aria-live="polite" aria-busy="true">
     <span class="sr-only">正在加载节点数据</span>
 
-    <div class="home-skeleton__overview">
+    <div
+      class="home-skeleton__overview"
+      :class="{ 'home-skeleton__overview--legacy': appStore.topDataPanel === 'legacy' }"
+    >
       <section
         class="home-skeleton__general"
         :class="{ 'home-skeleton__general--comfortable': appStore.materialDensity === 'comfortable' }"
       >
-        <div v-for="index in 6" :key="`general-${index}`" class="home-skeleton__general-card">
+        <div v-for="index in appStore.topDataPanel === 'legacy' ? 5 : 6" :key="`general-${index}`" class="home-skeleton__general-card">
           <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--lg" />
           <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--sm" />
         </div>
       </section>
 
-      <section class="home-skeleton__world-map">
+      <section v-if="appStore.topDataPanel !== 'legacy'" class="home-skeleton__world-map">
         <div class="home-skeleton__pulse home-skeleton__world-map-body" />
       </section>
     </div>
@@ -127,6 +130,20 @@ const appStore = useAppStore()
 
     .home-skeleton__general-card {
       min-height: 0;
+    }
+  }
+
+  &.home-skeleton__overview--legacy {
+    display: block;
+
+    .home-skeleton__general {
+      height: auto;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-rows: none;
+    }
+
+    .home-skeleton__general-card {
+      min-height: 132px;
     }
   }
 }
