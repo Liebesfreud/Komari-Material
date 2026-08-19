@@ -23,6 +23,7 @@ export interface NodePingStats {
   avgVolatility: number
   history: NodePingHistoryPoint[]
   hasData: boolean
+  hasLatencyData: boolean
   perTaskStats: NodePingPerTaskStat[]
 }
 
@@ -47,7 +48,7 @@ interface TaskRecordSummary {
 const PING_STATS_HOURS = 1
 const PING_REFRESH_INTERVAL_MS = 60_000
 const NODE_PING_BAR_COUNT = 10
-const CACHE_VERSION = 6
+const CACHE_VERSION = 7
 const CACHE_KEY_PREFIX = 'komari-theme-material:node-ping-stats'
 const FULL_LOSS_EPSILON = 1e-6
 
@@ -58,6 +59,7 @@ function createEmptyStats(): NodePingStats {
     avgVolatility: 0,
     history: [],
     hasData: false,
+    hasLatencyData: false,
     perTaskStats: [],
   }
 }
@@ -152,6 +154,7 @@ function isValidStatsState(value: unknown): value is NodePingStats {
     && typeof state.avgLoss === 'number'
     && typeof state.avgVolatility === 'number'
     && typeof state.hasData === 'boolean'
+    && typeof state.hasLatencyData === 'boolean'
     && Array.isArray(state.history)
     && state.history.every(isValidHistoryPoint)
     && Array.isArray(state.perTaskStats)
@@ -302,6 +305,7 @@ function buildStats(records: PingRecord[], tasks: PingTaskInfo[]): NodePingStats
   const avgLoss = taskLossValues.length ? average(taskLossValues) : average(historyLossValues)
   const avgVolatility = average(volatilityValues)
   const hasData = history.length > 0 || latencyValues.length > 0 || taskLossValues.length > 0
+  const hasLatencyData = latencyValues.length > 0 || historyLatencyValues.length > 0
 
   const taskNameMap = new Map(tasks.map(task => [task.id, task.name]))
   const perTaskStats: NodePingPerTaskStat[] = Array.from(
@@ -323,6 +327,7 @@ function buildStats(records: PingRecord[], tasks: PingTaskInfo[]): NodePingStats
     avgVolatility,
     history,
     hasData,
+    hasLatencyData,
     perTaskStats,
   }
 }

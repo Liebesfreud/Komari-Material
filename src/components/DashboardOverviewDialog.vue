@@ -348,6 +348,15 @@ function openNode(uuid: string): void {
 
 <template>
   <section class="dashboard-dialog" :aria-busy="dashboardStore.loading">
+    <p
+      v-if="props.section === 'network' && dashboardStore.error"
+      class="dashboard-dialog__data-notice"
+      role="status"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+      {{ dashboardStore.error }}
+    </p>
+
     <div v-if="props.section === 'time'" class="dashboard-dialog__section">
       <div class="dashboard-dialog__time-hero">
         <div>
@@ -684,6 +693,24 @@ function openNode(uuid: string): void {
   min-width: 0;
   flex-direction: column;
   gap: 16px;
+}
+
+.dashboard-dialog__data-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 10px 12px;
+  color: var(--md-sys-color-on-error-container);
+  background: var(--md-sys-color-error-container);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+
+  .material-symbols-rounded {
+    flex: 0 0 auto;
+    font-size: 18px;
+  }
 }
 
 .dashboard-dialog__time-hero,

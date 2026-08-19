@@ -106,6 +106,22 @@ const networkVolatileNodeCount = computed(() => new Set(
     .map(entry => entry.uuid),
 ).size)
 
+const networkStatValue = computed(() => {
+  if (!dashboardStore.hasData)
+    return dashboardStore.loading ? '…' : '—'
+  return String(networkVolatileNodeCount.value)
+})
+
+const networkStatLabel = computed(() => {
+  if (dashboardStore.error)
+    return dashboardStore.hasData ? '网络统计暂不可用' : '网络统计加载失败'
+  if (!dashboardStore.hasData)
+    return '网络统计加载中'
+  return '网络波动节点'
+})
+
+const networkCardAriaLabel = computed(() => `打开近期网络波动节点详情，${networkStatLabel.value}`)
+
 type DetailSection = 'renewal' | 'network'
 
 const detailTitles: Record<DetailSection, string> = {
@@ -203,17 +219,17 @@ onUnmounted(() => pauseRefreshTimer())
       role="button"
       tabindex="0"
       aria-haspopup="dialog"
-      aria-label="打开近期网络波动节点详情"
+      :aria-label="networkCardAriaLabel"
       @click="openDetail('network')"
       @keydown.enter.prevent="openDetail('network')"
       @keydown.space.prevent="openDetail('network')"
     >
       <div class="general-card__value md-number">
-        {{ networkVolatileNodeCount }}
+        {{ networkStatValue }}
       </div>
       <div class="general-card__label">
         <span class="material-symbols-rounded">trending_up</span>
-        网络波动节点
+        {{ networkStatLabel }}
       </div>
     </article>
 

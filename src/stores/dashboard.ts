@@ -1,27 +1,13 @@
-import type { DatabaseSizeInfo } from '@/utils/api'
 import type {
   PingMetricStatsResponse,
   PublicPingTask,
-  QueryMetricsResponse,
 } from '@/utils/rpc'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useAppStore } from '@/stores/app'
-import { getSharedApi } from '@/utils/api'
 import { getSharedRpc, RpcError } from '@/utils/rpc'
 
 /** 看板查询的历史范围。与 Komari 后台看板保持一致。 */
 export const DASHBOARD_HISTORY_HOURS = 24
-
-const DASHBOARD_METRICS = [
-  'cpu.usage',
-  'memory.used',
-  'net.in.rate',
-  'net.out.rate',
-  'traffic.up',
-  'traffic.down',
-  'ping.latency_ms',
-] as const
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof RpcError)
@@ -32,17 +18,14 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const useDashboardStore = defineStore('dashboard', () => {
-  const appStore = useAppStore()
-  const metrics = ref<QueryMetricsResponse | null>(null)
   const pingStats = ref<PingMetricStatsResponse | null>(null)
   const pingTasks = ref<PublicPingTask[]>([])
-  const databaseSize = ref<DatabaseSizeInfo | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastUpdated = ref<Date | null>(null)
   let requestId = 0
 
-  const hasData = computed(() => metrics.value !== null || pingStats.value !== null)
+  const hasData = computed(() => pingStats.value !== null)
 
   async function refresh(): Promise<void> {
     if (loading.value)
@@ -53,44 +36,19 @@ export const useDashboardStore = defineStore('dashboard', () => {
     const currentRequestId = ++requestId
 
     const rpc = getSharedRpc()
-    const api = getSharedApi()
-    const end = new Date()
-    const start = new Date(end.getTime() - DASHBOARD_HISTORY_HOURS * 60 * 60 * 1000)
-    const [metricsResult, pingStatsResult, pingTasksResult] = await Promise.allSettled([
-      rpc.queryMetrics({
-        metric_keys: [...DASHBOARD_METRICS],
-        start: start.toISOString(),
-        end: end.toISOString(),
-        aggregation: 'p95',
-        aggregation_by_metric: {
-          'traffic.up': 'sum',
-          'traffic.down': 'sum',
-        },
-        max_points: 500,
-        fill_empty: true,
-      }),
+    const [pingStatsResult, pingTasksResult] = await Promise.allSettled([
       rpc.getPingMetricStats({ hours: DASHBOARD_HISTORY_HOURS }),
       rpc.getPublicPingTasks(),
     ])
-
-    const databaseResult = appStore.isLoggedIn
-      ? await Promise.allSettled([api.getDatabaseSize()]).then(result => result[0])
-      : null
 
     if (currentRequestId !== requestId)
       return
 
     const failures: string[] = []
 
-    if (metricsResult.status === 'fulfilled') {
-      metrics.value = metricsResult.value
-    }
-    else {
-      failures.push(`指标：${getErrorMessage(metricsResult.reason)}`)
-    }
-
     if (pingStatsResult.status === 'fulfilled') {
       pingStats.value = pingStatsResult.value
+      lastUpdated.value = new Date()
     }
     else {
       failures.push(`Ping：${getErrorMessage(pingStatsResult.reason)}`)
@@ -103,17 +61,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
       failures.push(`Ping 任务：${getErrorMessage(pingTasksResult.reason)}`)
     }
 
-    if (databaseResult?.status === 'fulfilled') {
-      databaseSize.value = databaseResult.value
-    }
-    else if (databaseResult?.status === 'rejected') {
-      failures.push(`数据库：${getErrorMessage(databaseResult.reason)}`)
-    }
-
-    if (metricsResult.status === 'fulfilled' || pingStatsResult.status === 'fulfilled' || pingTasksResult.status === 'fulfilled') {
-      lastUpdated.value = new Date()
-    }
-
     if (failures.length > 0) {
       error.value = hasData.value
         ? '部分看板数据暂时不可用，已保留上一次成功数据。'
@@ -124,10 +71,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   return {
-    metrics,
     pingStats,
     pingTasks,
-    databaseSize,
     loading,
     error,
     lastUpdated,

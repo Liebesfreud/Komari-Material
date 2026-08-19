@@ -41,7 +41,7 @@ onUnmounted(() => {
 })
 
 const formattedServerVersion = computed(() => serverVersion.value?.version ?? null)
-const barStyle = computed(() => ({ maxWidth: appStore.maxPageWidth }))
+const barStyle = computed(() => appStore.fullWidth ? {} : { maxWidth: appStore.maxPageWidth })
 
 const showIcp = computed(() => appStore.icpEnabled && appStore.icpNumber)
 const showPolice = computed(() => appStore.policeEnabled && appStore.policeNumber)

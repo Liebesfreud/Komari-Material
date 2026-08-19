@@ -179,7 +179,7 @@ const latencySparkline = computed(() => buildSparkline('latency'))
 const lossSparkline = computed(() => buildSparkline('loss'))
 
 const latencyDisplay = computed(() => {
-  if (stats.value.hasData)
+  if (stats.value.hasLatencyData)
     return `${Math.round(stats.value.avgLatency)} ms`
   if (loading.value)
     return '加载中'
@@ -195,7 +195,7 @@ const lossDisplay = computed(() => {
 })
 
 const latencyTitle = computed(() => {
-  if (stats.value.hasData)
+  if (stats.value.hasLatencyData)
     return `平均延迟 ${Math.round(stats.value.avgLatency)} ms`
   return getEmptyTitle('latency')
 })
@@ -233,7 +233,7 @@ const speedTitle = computed(() => {
 })
 
 const latencyToneClass = computed<PingTone>(() => {
-  if (!stats.value.hasData)
+  if (!stats.value.hasLatencyData)
     return 'empty'
   return metricTone('latency', stats.value.avgLatency)
 })

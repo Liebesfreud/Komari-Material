@@ -33,19 +33,6 @@
   background: transparent;
 }
 
-// 页面级滚动保留交互，但不显示浏览器滚动条；内部滚动区域仍使用自己的滚动提示。
-html,
-body {
-  scrollbar-width: none;
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 html {
   min-height: 100%;
   color: var(--md-sys-color-on-background);

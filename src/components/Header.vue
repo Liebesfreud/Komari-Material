@@ -23,7 +23,7 @@ const themeAction = computed(() => {
   return { icon: 'contrast', label: '自动主题' }
 })
 
-const barStyle = computed(() => ({ maxWidth: appStore.maxPageWidth }))
+const barStyle = computed(() => appStore.fullWidth ? {} : { maxWidth: appStore.maxPageWidth })
 
 function handleButtonClick(action: string) {
   switch (action) {

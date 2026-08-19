@@ -86,6 +86,13 @@ function clampFiniteNumber(value: unknown, fallback: number, min: number, max: n
   return Math.min(max, Math.max(min, value))
 }
 
+function finiteNumberInRange(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max)
+    return fallback
+
+  return value
+}
+
 function isValidPageWidth(value: string): boolean {
   const cssApi = typeof CSS !== 'undefined' ? CSS : null
   if (cssApi?.supports)
@@ -224,7 +231,7 @@ const useAppStore = defineStore('app', () => {
 
   // 后台 number 字段没有原生范围校验，统一在 store 入口兜底。
   const dataUpdateInterval = computed<number>(() => {
-    return clampFiniteNumber(
+    return finiteNumberInRange(
       themeSettings.value.dataUpdateInterval,
       DEFAULT_DATA_UPDATE_INTERVAL,
       DEFAULT_DATA_UPDATE_INTERVAL,
