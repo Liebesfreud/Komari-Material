@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import type { WorldMapMarker } from '@/utils/worldMap'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{
   marker: WorldMapMarker
@@ -17,6 +17,18 @@ const emit = defineEmits<{
 
 const MENU_WIDTH = 232
 const MENU_MARGIN = 10
+
+// 记录加载失败的 code 而非布尔值：菜单在切换 marker 时会复用组件实例，
+// 失败状态必须跟随地区，否则上一个地区的失败会连累下一个地区。
+const failedFlagCode = ref<string | null>(null)
+
+const flagSrc = computed(() => {
+  return failedFlagCode.value === props.marker.code ? undefined : `/images/flags/${props.marker.code}.svg`
+})
+
+function handleFlagError(): void {
+  failedFlagCode.value = props.marker.code
+}
 
 const menuStyle = computed(() => {
   const left = Math.max(MENU_MARGIN, Math.min(props.x - MENU_WIDTH / 2, props.maxWidth - MENU_WIDTH - MENU_MARGIN))
@@ -46,6 +58,15 @@ function getStatusClass(node: NodeData): string {
     @click.stop
   >
     <header class="world-map-node-menu__header">
+      <img
+        v-if="flagSrc"
+        class="world-map-node-menu__flag"
+        :src="flagSrc"
+        :alt="marker.name"
+        loading="lazy"
+        @error="handleFlagError"
+      >
+      <span v-else class="material-symbols-rounded world-map-node-menu__flag-fallback" aria-hidden="true">public</span>
       <strong>{{ marker.name }}</strong>
       <span class="world-map-node-menu__count">{{ marker.onlineCount }}/{{ marker.count }} 在线</span>
     </header>
@@ -61,7 +82,15 @@ function getStatusClass(node: NodeData): string {
         :title="`查看 ${node.name} 详情`"
         @click="emit('select', node)"
       >
-        <i aria-hidden="true" />
+        <img
+          v-if="flagSrc"
+          class="world-map-node-menu__node-flag"
+          :src="flagSrc"
+          alt=""
+          loading="lazy"
+          @error="handleFlagError"
+        >
+        <span v-else class="material-symbols-rounded world-map-node-menu__flag-fallback" aria-hidden="true">public</span>
         <span>{{ node.name }}</span>
         <small>{{ node.online ? '在线' : '离线' }}</small>
       </button>
@@ -105,6 +134,28 @@ function getStatusClass(node: NodeData): string {
   }
 }
 
+.world-map-node-menu__flag {
+  width: 21px;
+  height: 15px;
+  flex: 0 0 auto;
+  border-radius: 2.5px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 32%, transparent);
+}
+
+.world-map-node-menu__flag-fallback {
+  display: inline-flex;
+  width: 21px;
+  height: 15px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-highest) 80%, transparent);
+  font-size: 13px;
+}
+
 .world-map-node-menu__count {
   flex: 0 0 auto;
   color: var(--md-sys-color-primary);
@@ -125,9 +176,9 @@ function getStatusClass(node: NodeData): string {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 7px minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   border: 0;
   border-radius: 10px;
   padding: 6px 8px;
@@ -141,12 +192,6 @@ function getStatusClass(node: NodeData): string {
   &:focus-visible {
     background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
     outline: none;
-  }
-
-  > i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
   }
 
   > span {
@@ -164,23 +209,24 @@ function getStatusClass(node: NodeData): string {
   }
 
   &--online {
-    > i {
-      background: var(--md-sys-color-primary);
-    }
-
     small {
       color: var(--md-sys-color-primary);
     }
   }
 
   &--offline {
-    > i {
-      background: var(--md-sys-color-tertiary);
-    }
-
     small {
       color: var(--md-sys-color-tertiary);
     }
   }
+}
+
+.world-map-node-menu__node-flag {
+  width: 21px;
+  height: 15px;
+  flex: 0 0 auto;
+  border-radius: 2.5px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 32%, transparent);
 }
 </style>

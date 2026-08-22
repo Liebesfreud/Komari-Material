@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import type { WorldMapMarker } from '@/utils/worldMap'
-import { computed } from 'vue'
+import type { WorldMapContinent } from '@/utils/worldMap'
+import { computed, ref } from 'vue'
 import WorldMapChart from '@/components/WorldMapChart.vue'
 import { useAppStore } from '@/stores/app'
-import { getWorldMapMarkers } from '@/utils/worldMap'
+import {
+  getWorldMapContinent,
+  getWorldMapContinentName,
+  getWorldMapMarkers,
+  WORLD_MAP_CONTINENT_ORDER,
+} from '@/utils/worldMap'
 
 const props = defineProps<{
   nodes: NodeData[]
@@ -33,25 +38,84 @@ const chartColors = computed(() => {
   }
 })
 
-function getMarkerTone(marker: WorldMapMarker): 'online' | 'mixed' | 'offline' {
-  if (marker.onlineCount === 0)
-    return 'offline'
-  if (marker.onlineCount === marker.count)
-    return 'online'
-  return 'mixed'
-}
-
-function getMarkerColor(marker: WorldMapMarker): string {
-  const tone = getMarkerTone(marker)
-  if (tone === 'online')
-    return chartColors.value.primary
-  if (tone === 'mixed')
-    return chartColors.value.secondary
-  return chartColors.value.tertiary
-}
-
 function getStatusClass(node: NodeData): string {
   return node.online ? 'world-map-dialog__node--online' : 'world-map-dialog__node--offline'
+}
+
+interface WorldMapSidebarNode {
+  node: NodeData
+  flagCode: string | null
+  regionName: string
+}
+
+interface WorldMapContinentGroup {
+  key: string
+  name: string
+  regionCount: number
+  onlineCount: number
+  totalCount: number
+  nodes: WorldMapSidebarNode[]
+}
+
+const continentGroups = computed<WorldMapContinentGroup[]>(() => {
+  const grouped = new Map<WorldMapContinent, WorldMapSidebarNode[]>()
+  const regionCount = new Map<WorldMapContinent, number>()
+
+  markers.value.forEach((marker) => {
+    const continent = getWorldMapContinent(marker.code)
+    regionCount.set(continent, (regionCount.get(continent) ?? 0) + 1)
+
+    marker.nodes.forEach((node) => {
+      const entry: WorldMapSidebarNode = { node, flagCode: marker.code, regionName: marker.name }
+      const list = grouped.get(continent)
+      if (list)
+        list.push(entry)
+      else
+        grouped.set(continent, [entry])
+    })
+  })
+
+  return WORLD_MAP_CONTINENT_ORDER
+    .filter(continent => grouped.has(continent))
+    .map(continent => ({
+      key: continent,
+      name: getWorldMapContinentName(continent),
+      regionCount: regionCount.get(continent) ?? 0,
+      onlineCount: grouped.get(continent)!.filter(entry => entry.node.online).length,
+      totalCount: grouped.get(continent)!.length,
+      nodes: grouped.get(continent)!,
+    }))
+})
+
+const sidebarGroups = computed<WorldMapContinentGroup[]>(() => {
+  if (unmappedNodes.value.length === 0)
+    return continentGroups.value
+
+  return [
+    ...continentGroups.value,
+    {
+      key: 'unmapped',
+      name: '未标注区域',
+      regionCount: 0,
+      onlineCount: unmappedNodes.value.filter(node => node.online).length,
+      totalCount: unmappedNodes.value.length,
+      nodes: unmappedNodes.value.map(node => ({ node, flagCode: null, regionName: '未标注区域' })),
+    },
+  ]
+})
+
+const failedFlags = ref(new Set<string>())
+
+function getSidebarFlagSrc(flagCode: string | null): string | undefined {
+  return flagCode && !failedFlags.value.has(flagCode) ? `/images/flags/${flagCode}.svg` : undefined
+}
+
+function handleFlagError(flagCode: string | null): void {
+  if (!flagCode)
+    return
+  const next = new Set(failedFlags.value)
+  next.add(flagCode)
+  failedFlags.value = next
 }
 
 function handleNodeClick(node: NodeData): void {
@@ -73,9 +137,19 @@ function handleNodeClick(node: NodeData): void {
           <strong>暂无可定位的节点</strong>
           <span>节点地区信息同步后会显示在地图上</span>
         </div>
-        <p class="world-map-dialog__hint">
-          点击地图上的节点标记，或侧栏中的节点，可查看详情。
-        </p>
+
+        <div v-if="markers.length > 0" class="world-map-dialog__legend" aria-label="地图标记图例">
+          <span class="world-map-dialog__legend-item">
+            <i :style="{ backgroundColor: chartColors.primary }" aria-hidden="true" />在线
+          </span>
+          <span class="world-map-dialog__legend-item">
+            <i :style="{ backgroundColor: chartColors.secondary }" aria-hidden="true" />部分在线
+          </span>
+          <span class="world-map-dialog__legend-item">
+            <i :style="{ backgroundColor: chartColors.tertiary }" aria-hidden="true" />离线
+          </span>
+          <span class="world-map-dialog__legend-hint">点击地图标记或节点可查看详情</span>
+        </div>
       </div>
 
       <aside class="world-map-dialog__sidebar" aria-label="节点和区域详情">
@@ -104,63 +178,43 @@ function handleNodeClick(node: NodeData): void {
           </div>
         </div>
 
-        <div class="world-map-dialog__section-heading">
-          <strong>区域节点</strong>
-          <span>在线 / 总数</span>
-        </div>
-
-        <div v-if="markers.length > 0" class="world-map-dialog__regions">
-          <article v-for="marker in markers" :key="marker.code" class="world-map-dialog__region">
-            <header class="world-map-dialog__region-header">
-              <div class="world-map-dialog__region-name">
-                <i :style="{ backgroundColor: getMarkerColor(marker) }" aria-hidden="true" />
-                <strong>{{ marker.name }}</strong>
-                <code>{{ marker.code }}</code>
-              </div>
-              <strong class="world-map-dialog__region-count">{{ marker.onlineCount }}/{{ marker.count }}</strong>
+        <div v-if="sidebarGroups.length > 0" class="world-map-dialog__groups">
+          <section
+            v-for="group in sidebarGroups"
+            :key="group.key"
+            class="world-map-dialog__continent"
+            :class="{ 'world-map-dialog__continent--unmapped': group.key === 'unmapped' }"
+          >
+            <header class="world-map-dialog__continent-header">
+              <strong>{{ group.name }}</strong>
+              <span>{{ group.regionCount > 0 ? `${group.regionCount} 个地区 · ` : '' }}{{ group.onlineCount }}/{{ group.totalCount }}</span>
             </header>
 
             <div class="world-map-dialog__nodes">
               <button
-                v-for="node in marker.nodes"
-                :key="node.uuid"
+                v-for="entry in group.nodes"
+                :key="entry.node.uuid"
                 class="world-map-dialog__node"
-                :class="getStatusClass(node)"
+                :class="getStatusClass(entry.node)"
                 type="button"
-                :title="`查看 ${node.name} 详情`"
-                @click="handleNodeClick(node)"
+                :title="`${entry.node.name} · ${entry.regionName}`"
+                @click="handleNodeClick(entry.node)"
               >
-                <i aria-hidden="true" />
-                <span>{{ node.name }}</span>
-                <small>{{ node.online ? '在线' : '离线' }}</small>
-              </button>
-            </div>
-          </article>
+                <img
+                  v-if="getSidebarFlagSrc(entry.flagCode)"
+                  class="world-map-dialog__node-flag"
+                  :src="getSidebarFlagSrc(entry.flagCode)"
+                  :alt="entry.regionName"
+                  loading="lazy"
+                  @error="handleFlagError(entry.flagCode)"
+                >
+                <span v-else class="material-symbols-rounded world-map-dialog__node-flag-fallback" aria-hidden="true">public</span>
 
-          <article v-if="unmappedNodes.length > 0" class="world-map-dialog__region world-map-dialog__region--unmapped">
-            <header class="world-map-dialog__region-header">
-              <div class="world-map-dialog__region-name">
-                <i :style="{ backgroundColor: chartColors.onSurfaceVariant }" aria-hidden="true" />
-                <strong>未标注区域</strong>
-              </div>
-              <strong class="world-map-dialog__region-count">{{ unmappedNodes.filter(node => node.online).length }}/{{ unmappedNodes.length }}</strong>
-            </header>
-            <div class="world-map-dialog__nodes">
-              <button
-                v-for="node in unmappedNodes"
-                :key="node.uuid"
-                class="world-map-dialog__node"
-                :class="getStatusClass(node)"
-                type="button"
-                :title="`查看 ${node.name} 详情`"
-                @click="handleNodeClick(node)"
-              >
-                <i aria-hidden="true" />
-                <span>{{ node.name }}</span>
-                <small>{{ node.online ? '在线' : '离线' }}</small>
+                <span class="world-map-dialog__node-name">{{ entry.node.name }}</span>
+                <small>{{ entry.node.online ? '在线' : '离线' }}</small>
               </button>
             </div>
-          </article>
+          </section>
         </div>
 
         <p v-else class="world-map-dialog__empty-copy">
@@ -180,7 +234,7 @@ function handleNodeClick(node: NodeData): void {
 .world-map-dialog__layout {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: start;
   gap: 16px;
 }
@@ -198,7 +252,6 @@ function handleNodeClick(node: NodeData): void {
   height: var(--world-map-dialog-panel-height);
   min-width: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
   border-radius: 24px;
   background: var(--md-sys-color-surface-container);
 }
@@ -237,17 +290,44 @@ function handleNodeClick(node: NodeData): void {
   }
 }
 
-.world-map-dialog__hint {
-  margin: 10px 2px 0;
+.world-map-dialog__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 10px;
+  padding: 0 2px;
+}
+
+.world-map-dialog__legend-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+
+  > i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+}
+
+.world-map-dialog__legend-hint {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--md-sys-color-on-surface-variant);
   font-family: var(--md-sys-typescale-body-small-font);
   font-size: var(--md-sys-typescale-body-small-size);
-  line-height: var(--md-sys-typescale-body-small-line-height);
+  white-space: nowrap;
 }
 
 .world-map-dialog__sidebar {
   min-width: 0;
-  height: var(--world-map-dialog-panel-height);
+  max-height: min(64vh, 620px);
   overflow: auto;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 24px;
@@ -255,16 +335,11 @@ function handleNodeClick(node: NodeData): void {
   background: var(--md-sys-color-surface-container);
 }
 
-.world-map-dialog__sidebar-header,
-.world-map-dialog__section-heading,
-.world-map-dialog__region-header {
+.world-map-dialog__sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.world-map-dialog__sidebar-header {
   padding-bottom: 14px;
 
   > div {
@@ -339,8 +414,29 @@ function handleNodeClick(node: NodeData): void {
   }
 }
 
-.world-map-dialog__section-heading {
-  padding: 16px 0 8px;
+.world-map-dialog__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.world-map-dialog__continent {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.world-map-dialog__continent--unmapped {
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.world-map-dialog__continent-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 8px;
 
   strong {
     color: var(--md-sys-color-on-surface);
@@ -349,83 +445,30 @@ function handleNodeClick(node: NodeData): void {
   }
 
   span {
+    flex: 0 0 auto;
     color: var(--md-sys-color-on-surface-variant);
     font-family: var(--md-sys-typescale-label-small-font);
     font-size: var(--md-sys-typescale-label-small-size);
   }
 }
 
-.world-map-dialog__regions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.world-map-dialog__region {
-  border-radius: 16px;
-  padding: 10px;
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.world-map-dialog__region--unmapped {
-  background: var(--md-sys-color-surface-container-highest);
-}
-
-.world-map-dialog__region-name {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-
-  > i {
-    flex: 0 0 auto;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  strong {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--md-sys-color-on-surface);
-    font-family: var(--md-sys-typescale-label-large-font);
-    font-size: var(--md-sys-typescale-label-large-size);
-    white-space: nowrap;
-  }
-
-  code {
-    color: var(--md-sys-color-on-surface-variant);
-    font-family: var(--md-app-number-font-family);
-    font-size: 11px;
-  }
-}
-
-.world-map-dialog__region-count {
-  flex: 0 0 auto;
-  color: var(--md-sys-color-on-surface-variant);
-  font-family: var(--md-app-number-font-family);
-  font-size: 12px;
-}
-
 .world-map-dialog__nodes {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 7px;
-  padding-top: 7px;
-  border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
+  gap: 1px;
+  padding: 2px 8px 9px;
 }
 
 .world-map-dialog__node {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 7px minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   border: 0;
-  border-radius: 8px;
-  padding: 5px 4px;
+  border-radius: 10px;
+  padding: 6px 6px;
   color: var(--md-sys-color-on-surface-variant);
   background: transparent;
   text-align: left;
@@ -433,48 +476,53 @@ function handleNodeClick(node: NodeData): void {
 
   &:hover,
   &:focus-visible {
-    background: var(--md-sys-color-surface-container-highest);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
     outline: none;
   }
 
-  > i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-  }
-
-  > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: var(--md-sys-typescale-body-small-font);
-    font-size: var(--md-sys-typescale-body-small-size);
-    white-space: nowrap;
-  }
-
-  small {
+  > small {
     font-family: var(--md-sys-typescale-label-small-font);
     font-size: var(--md-sys-typescale-label-small-size);
   }
 
-  &--online {
-    > i {
-      background: var(--md-sys-color-primary);
-    }
-
-    small {
-      color: var(--md-sys-color-primary);
-    }
+  &--online > small {
+    color: var(--md-sys-color-primary);
   }
 
-  &--offline {
-    > i {
-      background: var(--md-sys-color-tertiary);
-    }
-
-    small {
-      color: var(--md-sys-color-tertiary);
-    }
+  &--offline > small {
+    color: var(--md-sys-color-tertiary);
   }
+}
+
+.world-map-dialog__node-flag {
+  width: 21px;
+  height: 15px;
+  flex: 0 0 auto;
+  border-radius: 2.5px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 32%, transparent);
+}
+
+.world-map-dialog__node-flag-fallback {
+  display: inline-flex;
+  width: 21px;
+  height: 15px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-highest) 80%, transparent);
+  font-size: 13px;
+}
+
+.world-map-dialog__node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  white-space: nowrap;
 }
 
 .world-map-dialog__empty-copy {
@@ -489,6 +537,8 @@ function handleNodeClick(node: NodeData): void {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* 窄屏下图表高度由宽度决定，容器改为自适应高度贴合图表，
+     否则固定 min(64vh, 620px) 会在地图上下留下大片空白。 */
   .world-map-dialog__viewport,
   .world-map-dialog__empty {
     height: auto;
@@ -500,7 +550,6 @@ function handleNodeClick(node: NodeData): void {
   }
 
   .world-map-dialog__sidebar {
-    height: auto;
     max-height: none;
   }
 }
@@ -508,10 +557,6 @@ function handleNodeClick(node: NodeData): void {
 @media (max-width: 520px) {
   .world-map-dialog__layout {
     gap: 12px;
-  }
-
-  .world-map-dialog__map-panel {
-    padding-top: 0;
   }
 
   .world-map-dialog__sidebar {

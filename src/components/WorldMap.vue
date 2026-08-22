@@ -111,7 +111,6 @@ function openExpandedMap(): void {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
   border-radius: var(--md-app-card-radius, 24px);
   background: var(--md-sys-color-surface-container);
 }
@@ -124,21 +123,32 @@ function openExpandedMap(): void {
   min-width: 0;
 }
 
+/* Small FAB：40dp、12dp 圆角、surface 容器色、elevation-1。 */
 .world-map__expand {
   position: absolute;
   right: 10px;
   bottom: 10px;
   z-index: 1;
-  width: 38px;
-  height: 38px;
-  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 78%, transparent);
-  color: var(--md-sys-color-on-surface);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 90%, transparent);
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
   box-shadow: var(--md-app-elevation-1);
-  backdrop-filter: blur(8px);
+  transition:
+    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--md-sys-color-surface-container-highest);
+    box-shadow: var(--md-app-elevation-2);
+    outline: none;
+  }
 
   .material-symbols-rounded {
-    font-size: 20px;
+    font-size: 24px;
   }
 }
 
