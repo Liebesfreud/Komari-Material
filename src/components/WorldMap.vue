@@ -107,6 +107,9 @@ function openExpandedMap(): void {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
+  border-radius: var(--md-app-card-radius, 24px);
+  background: var(--md-sys-color-surface-container);
 }
 
 .world-map__expand {

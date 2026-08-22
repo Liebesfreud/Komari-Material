@@ -5,9 +5,10 @@ import type { NodeData } from '@/stores/nodes'
 import type { WorldMapMarker } from '@/utils/worldMap'
 import { registerMap } from 'echarts/core'
 import { feature } from 'topojson-client'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import VChart from 'vue-echarts'
 import worldAtlas from 'world-atlas/countries-110m.json'
+import WorldMapNodeMenu from '@/components/WorldMapNodeMenu.vue'
 import { useAppStore } from '@/stores/app'
 import '@/utils/echarts'
 
@@ -142,6 +143,7 @@ function getPointLabel(params: unknown): string {
 }
 
 const chartOption = computed(() => ({
+  backgroundColor: 'transparent',
   animationDuration: 420,
   animationDurationUpdate: 260,
   tooltip: {
@@ -157,7 +159,7 @@ const chartOption = computed(() => ({
       fontSize: 13,
       lineHeight: 20,
     },
-    extraCssText: 'box-shadow: none;',
+    extraCssText: 'box-shadow: var(--md-app-elevation-2);',
     formatter: (params: unknown) => formatTooltip(params),
   },
   geo: {
@@ -224,6 +226,7 @@ const chartOption = computed(() => ({
     },
     emphasis: {
       scale: true,
+      cursor: 'pointer',
       label: {
         show: true,
       },
@@ -231,28 +234,100 @@ const chartOption = computed(() => ({
   }],
 }))
 
+const chartRoot = ref<HTMLElement>()
+const activeMenu = ref<{ marker: WorldMapMarker, x: number, y: number }>()
+
+function closeNodeMenu(): void {
+  activeMenu.value = undefined
+}
+
 function handleChartClick(params: ECElementEvent): void {
   if (params.seriesType !== 'scatter')
     return
 
   const marker = getPointMarker(params)
-  const node = marker?.nodes[0]
-  if (node)
-    emit('nodeClick', node)
+  if (!marker)
+    return
+
+  if (marker.nodes.length <= 1) {
+    closeNodeMenu()
+    const node = marker.nodes[0]
+    if (node)
+      emit('nodeClick', node)
+    return
+  }
+
+  const event = params.event as { offsetX?: number, offsetY?: number } | undefined
+  const offsetX = typeof event?.offsetX === 'number' ? event.offsetX : 0
+  const offsetY = typeof event?.offsetY === 'number' ? event.offsetY : 0
+  activeMenu.value = { marker, x: offsetX, y: offsetY }
 }
+
+function handleMenuSelect(node: NodeData): void {
+  closeNodeMenu()
+  emit('nodeClick', node)
+}
+
+function handleGlobalPointerDown(event: PointerEvent): void {
+  if (!activeMenu.value)
+    return
+  if (chartRoot.value?.contains(event.target as Node))
+    return
+  closeNodeMenu()
+}
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape')
+    closeNodeMenu()
+}
+
+watch(activeMenu, (menu) => {
+  if (menu) {
+    document.addEventListener('pointerdown', handleGlobalPointerDown, true)
+    document.addEventListener('keydown', handleKeydown)
+  }
+  else {
+    document.removeEventListener('pointerdown', handleGlobalPointerDown, true)
+    document.removeEventListener('keydown', handleKeydown)
+  }
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleGlobalPointerDown, true)
+  document.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
-  <VChart
-    class="world-map-chart"
-    :option="chartOption"
-    autoresize
-    aria-label="节点世界分布地图"
-    @click="handleChartClick"
-  />
+  <div ref="chartRoot" class="world-map-chart__root">
+    <VChart
+      class="world-map-chart"
+      :option="chartOption"
+      autoresize
+      aria-label="节点世界分布地图"
+      @click="handleChartClick"
+    />
+
+    <WorldMapNodeMenu
+      v-if="activeMenu && chartRoot"
+      :marker="activeMenu.marker"
+      :x="activeMenu.x"
+      :y="activeMenu.y"
+      :max-width="chartRoot.clientWidth"
+      :max-height="chartRoot.clientHeight"
+      @select="handleMenuSelect"
+    />
+  </div>
 </template>
 
 <style scoped lang="scss">
+.world-map-chart__root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
 .world-map-chart {
   display: block;
   width: 100%;

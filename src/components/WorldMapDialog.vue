@@ -192,6 +192,7 @@ function handleNodeClick(node: NodeData): void {
   aspect-ratio: 2.13 / 1;
   min-width: 0;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
   border-radius: 24px;
   background: var(--md-sys-color-surface-container);
 }
