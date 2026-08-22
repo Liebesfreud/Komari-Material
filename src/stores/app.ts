@@ -21,12 +21,14 @@ type RpcTransportMode = 'websocket' | 'http'
 type AlertType = 'default' | 'info' | 'success' | 'warning' | 'error'
 type BackgroundType = 'image' | 'video'
 type CardSurfaceStyle = 'solid' | 'translucent'
+type TopDataPanel = 'current' | 'legacy'
 
 interface AppearanceSettingsOverrides {
   monetColorMode?: MonetColorMode
   monetPalette?: string
   materialSeedColor?: string
   materialDensity?: MaterialDensity
+  topDataPanel?: TopDataPanel
   cardSurfaceStyle?: CardSurfaceStyle
   cardOpacity?: number
   fullWidth?: boolean
@@ -307,6 +309,10 @@ const useAppStore = defineStore('app', () => {
       }
     }
     return 'compact'
+  })
+
+  const topDataPanel = computed<TopDataPanel>(() => {
+    return themeSettings.value.topDataPanel === 'legacy' ? 'legacy' : 'current'
   })
 
   const cardSurfaceStyle = computed<CardSurfaceStyle>(() => {
@@ -877,6 +883,7 @@ const useAppStore = defineStore('app', () => {
     wallpaperSeedSourceUrl,
     wallpaperSeedError,
     materialDensity,
+    topDataPanel,
     cardSurfaceStyle,
     cardOpacity,
     fontFamily,

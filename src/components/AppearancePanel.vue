@@ -7,6 +7,7 @@ import { buildMaterialThemeTokens, MONET_PALETTES, normalizeHexColor } from '@/u
 type ThemeMode = 'auto' | 'light' | 'dark'
 type BackgroundType = 'image' | 'video'
 type CardSurfaceStyle = 'solid' | 'translucent'
+type TopDataPanel = 'current' | 'legacy'
 type AppearanceTab = 'theme' | 'interface' | 'wallpaper'
 
 const appStore = useAppStore()
@@ -33,6 +34,11 @@ const monetModeOptions: Array<{ value: MonetColorMode, label: string, icon: stri
 const densityOptions: Array<{ value: MaterialDensity, label: string, icon: string }> = [
   { value: 'compact', label: '紧凑', icon: 'density_small' },
   { value: 'comfortable', label: '舒展', icon: 'density_medium' },
+]
+
+const topDataPanelOptions: Array<{ value: TopDataPanel, label: string, icon: string }> = [
+  { value: 'current', label: '当前布局', icon: 'dashboard' },
+  { value: 'legacy', label: '旧版五卡片', icon: 'view_quilt' },
 ]
 
 const cardSurfaceOptions: Array<{ value: CardSurfaceStyle, label: string, icon: string }> = [
@@ -83,6 +89,11 @@ const paletteOptions = computed(() => {
 const densityModel = computed<MaterialDensity>({
   get: () => appStore.materialDensity,
   set: value => appStore.updateAppearanceSetting('materialDensity', value),
+})
+
+const topDataPanelModel = computed<TopDataPanel>({
+  get: () => appStore.topDataPanel,
+  set: value => appStore.updateAppearanceSetting('topDataPanel', value),
 })
 
 const cardSurfaceModel = computed<CardSurfaceStyle>({
@@ -328,6 +339,28 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
         role="tabpanel"
         aria-labelledby="appearance-tab-interface"
       >
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>首页顶部数据面板</h3>
+            <p>选择当前布局或旧版五卡片布局</p>
+          </div>
+          <div class="appearance-segmented" role="radiogroup" aria-label="首页顶部数据面板">
+            <button
+              v-for="option in topDataPanelOptions"
+              :key="option.value"
+              class="appearance-segmented__button"
+              :class="{ 'is-active': topDataPanelModel === option.value }"
+              role="radio"
+              :aria-checked="topDataPanelModel === option.value"
+              type="button"
+              @click="topDataPanelModel = option.value"
+            >
+              <span class="material-symbols-rounded">{{ option.icon }}</span>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
+        </section>
+
         <section class="appearance-group">
           <div class="appearance-group__header">
             <h3>界面密度</h3>
