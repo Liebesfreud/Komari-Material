@@ -64,6 +64,15 @@ export interface NodeData {
 /** WebSocket 连接状态 */
 export type WsConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
+/** 首页速率曲线的时间窗口（30 秒） */
+export const NETWORK_RATE_HISTORY_WINDOW_MS = 30 * 1000
+
+export interface NetworkRateHistoryPoint {
+  time: string
+  up: number
+  down: number
+}
+
 /** 状态数据（用于更新） */
 interface StatusData {
   online: boolean
@@ -90,6 +99,7 @@ interface StatusData {
 const useNodesStore = defineStore('nodes', () => {
   // ===== 状态 =====
   const nodes = ref<NodeData[]>([])
+  const networkRateHistory = ref<NetworkRateHistoryPoint[]>([])
   const wsConnectionState = ref<WsConnectionState>('disconnected')
   const wsReconnectAttempts = ref<number>(0)
 
@@ -118,6 +128,30 @@ const useNodesStore = defineStore('nodes', () => {
     })
     return map
   })
+
+  function recordNetworkRateSample(): void {
+    const timestamp = Date.now()
+    const up = nodes.value.reduce((sum, node) => {
+      if (!node.online || !Number.isFinite(node.net_out))
+        return sum
+      return sum + Math.max(0, node.net_out)
+    }, 0)
+    const down = nodes.value.reduce((sum, node) => {
+      if (!node.online || !Number.isFinite(node.net_in))
+        return sum
+      return sum + Math.max(0, node.net_in)
+    }, 0)
+    const cutoff = timestamp - NETWORK_RATE_HISTORY_WINDOW_MS
+
+    networkRateHistory.value = [
+      ...networkRateHistory.value.filter(point => Date.parse(point.time) >= cutoff),
+      {
+        time: new Date(timestamp).toISOString(),
+        up,
+        down,
+      },
+    ]
+  }
 
   // ===== 方法 =====
 
@@ -239,6 +273,7 @@ const useNodesStore = defineStore('nodes', () => {
    * 初始化节点数据（首次加载）
    */
   function initNodes(clients: Record<string, Client>, statuses: Record<string, NodeStatus>): void {
+    networkRateHistory.value = []
     const uuids = Object.keys(clients)
     const existingUuids = new Set(nodes.value.map(n => n.uuid))
 
@@ -279,6 +314,7 @@ const useNodesStore = defineStore('nodes', () => {
 
     // 按 weight 升序排序（weight 越小越靠前）
     sortNodesByWeight()
+    recordNetworkRateSample()
   }
 
   /**
@@ -303,6 +339,7 @@ const useNodesStore = defineStore('nodes', () => {
 
       nodes.value[index] = updateNodeStatus(node, extractStatusData(status))
     })
+    recordNetworkRateSample()
   }
 
   /**
@@ -377,11 +414,13 @@ const useNodesStore = defineStore('nodes', () => {
    */
   function clearNodes(): void {
     nodes.value = []
+    networkRateHistory.value = []
   }
 
   return {
     // 状态
     nodes,
+    networkRateHistory,
     wsConnectionState,
     wsReconnectAttempts,
     // 计算属性
