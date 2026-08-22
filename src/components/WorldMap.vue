@@ -112,7 +112,6 @@ function openExpandedMap(): void {
   min-height: 0;
   overflow: hidden;
   border-radius: var(--md-app-card-radius, 24px);
-  background: var(--md-sys-color-surface-container);
 }
 
 .world-map__chart {

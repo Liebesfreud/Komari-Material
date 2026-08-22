@@ -253,7 +253,6 @@ function handleNodeClick(node: NodeData): void {
   min-width: 0;
   overflow: hidden;
   border-radius: 24px;
-  background: var(--md-sys-color-surface-container);
 }
 
 .world-map-dialog__chart {
@@ -329,7 +328,7 @@ function handleNodeClick(node: NodeData): void {
   min-width: 0;
   max-height: min(64vh, 620px);
   overflow: auto;
-  border: 1px solid var(--md-sys-color-outline-variant);
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 78%, transparent);
   border-radius: 24px;
   padding: 16px;
   background: var(--md-sys-color-surface-container);
