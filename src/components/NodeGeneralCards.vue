@@ -160,11 +160,13 @@ const networkStatEmptyText = computed(() => {
 
 const networkCardAriaLabel = computed(() => `打开近期网络波动节点详情，${networkStatLabel.value}`)
 
-type DetailSection = 'renewal' | 'network'
+type DetailSection = 'renewal' | 'network' | 'speed' | 'traffic'
 
 const detailTitles: Record<DetailSection, string> = {
   renewal: '即将过期节点详情',
   network: '网络波动节点详情',
+  speed: '网络速率详情',
+  traffic: '流量总览详情',
 }
 
 function openDetail(section: DetailSection): void {
@@ -314,11 +316,18 @@ onUnmounted(() => pauseRefreshTimer())
     </article>
 
     <article
-      class="md-card general-card general-card--traffic"
+      class="md-card md-card--interactive general-card general-card--traffic"
       :class="[
         { 'md-surface-glass': hasBackgroundBlur, 'general-card--traffic-unified': !appStore.trafficSplitColor },
         cardBlurClass,
       ]"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-label="打开流量总览详情"
+      @click="openDetail('traffic')"
+      @keydown.enter.prevent="openDetail('traffic')"
+      @keydown.space.prevent="openDetail('traffic')"
     >
       <div class="general-card__traffic-content" aria-label="流量总览">
         <div class="general-card__traffic-row" role="group" aria-label="今日流量">
@@ -359,7 +368,17 @@ onUnmounted(() => pauseRefreshTimer())
       </div>
     </article>
 
-    <article class="md-card general-card general-card--speed" :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]">
+    <article
+      class="md-card md-card--interactive general-card general-card--speed"
+      :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-label="打开网络速率详情"
+      @click="openDetail('speed')"
+      @keydown.enter.prevent="openDetail('speed')"
+      @keydown.space.prevent="openDetail('speed')"
+    >
       <div class="general-card__speed-main">
         <div class="general-card__metric-stack general-card__speed-metrics md-number">
           <div>

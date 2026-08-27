@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { DashboardTrendPoint } from '@/components/DashboardTrendChart.vue'
 import type { NodeData } from '@/stores/nodes'
 import { useNow } from '@vueuse/core'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import DashboardTrendChart from '@/components/DashboardTrendChart.vue'
 import { useAppStore } from '@/stores/app'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useNodesStore } from '@/stores/nodes'
@@ -14,7 +16,7 @@ import {
 import { getRegionDisplayName } from '@/utils/regionHelper'
 import { getDaysUntilExpired } from '@/utils/tagHelper'
 
-type DashboardSection = 'time' | 'online' | 'network' | 'traffic' | 'renewal'
+type DashboardSection = 'time' | 'online' | 'network' | 'speed' | 'traffic' | 'renewal'
 type Tone = 'positive' | 'warning' | 'negative' | 'empty'
 
 const props = defineProps<{
@@ -201,6 +203,58 @@ const currentSpeed = computed(() => onlineNodes.value.reduce((total, node) => ({
   down: total.down + (Number.isFinite(node.net_in) ? node.net_in : 0),
 }), { up: 0, down: 0 }))
 
+const currentSpeedNodes = computed(() => onlineNodes.value
+  .map(node => ({
+    uuid: node.uuid,
+    name: node.name,
+    up: Number.isFinite(node.net_out) ? Math.max(0, node.net_out) : 0,
+    down: Number.isFinite(node.net_in) ? Math.max(0, node.net_in) : 0,
+  }))
+  .map(node => ({ ...node, total: node.up + node.down }))
+  .filter(node => node.total > 0)
+  .sort((left, right) => right.total - left.total)
+  .slice(0, 5))
+
+function buildMetricTrendPoints(upMetric: string, downMetric: string): DashboardTrendPoint[] {
+  const buckets = new Map<number, { up: number | null, down: number | null }>()
+
+  dashboardStore.metrics?.series
+    .filter(series => series.metric_key === upMetric || series.metric_key === downMetric)
+    .forEach((series) => {
+      const direction = series.metric_key === upMetric ? 'up' : 'down'
+      series.points.forEach((point) => {
+        const timestamp = Date.parse(point.time)
+        if (!Number.isFinite(timestamp) || typeof point.value !== 'number' || !Number.isFinite(point.value))
+          return
+
+        const bucket = buckets.get(timestamp) ?? { up: null, down: null }
+        bucket[direction] = (bucket[direction] ?? 0) + Math.max(0, point.value)
+        buckets.set(timestamp, bucket)
+      })
+    })
+
+  return [...buckets.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([timestamp, values]) => ({
+      time: new Date(timestamp).toISOString(),
+      ...values,
+    }))
+}
+
+const historicalSpeedTrendPoints = computed(() => buildMetricTrendPoints('net.out.rate', 'net.in.rate'))
+const speedTrendPoints = computed<DashboardTrendPoint[]>(() => historicalSpeedTrendPoints.value.length > 0
+  ? historicalSpeedTrendPoints.value
+  : nodesStore.networkRateHistory.map(point => ({ ...point })))
+const speedTrendWindowLabel = computed(() => historicalSpeedTrendPoints.value.length > 0 ? '近 24 小时' : '最近 30 秒')
+const trafficTrendPoints = computed(() => buildMetricTrendPoints('traffic.up', 'traffic.down'))
+
+const speedTrendValues = computed(() => speedTrendPoints.value.flatMap(point => [point.up, point.down]
+  .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))))
+const speedPeak = computed(() => speedTrendValues.value.length > 0 ? Math.max(...speedTrendValues.value) : 0)
+const speedAverage = computed(() => speedTrendValues.value.length > 0
+  ? speedTrendValues.value.reduce((sum, value) => sum + value, 0) / speedTrendValues.value.length
+  : 0)
+
 const networkStatus = computed<StatusSummary>(() => {
   if (totalNodeCount.value === 0 && networkStats.value.length === 0)
     return { label: '暂无网络数据', tone: 'empty' }
@@ -349,7 +403,7 @@ function openNode(uuid: string): void {
 <template>
   <section class="dashboard-dialog" :aria-busy="dashboardStore.loading">
     <p
-      v-if="props.section === 'network' && dashboardStore.error"
+      v-if="['network', 'speed', 'traffic'].includes(props.section) && dashboardStore.error"
       class="dashboard-dialog__data-notice"
       role="status"
     >
@@ -568,35 +622,102 @@ function openNode(uuid: string): void {
       </p>
     </div>
 
+    <div v-else-if="props.section === 'speed'" class="dashboard-dialog__section">
+      <div class="dashboard-dialog__metric-grid">
+        <div class="dashboard-dialog__metric-card">
+          <span>当前下行</span>
+          <strong class="dashboard-dialog__value dashboard-tone--secondary md-number">{{ formatBytesPerSecond(currentSpeed.down) }}</strong>
+        </div>
+        <div class="dashboard-dialog__metric-card">
+          <span>当前上行</span>
+          <strong class="dashboard-dialog__value dashboard-tone--primary md-number">{{ formatBytesPerSecond(currentSpeed.up) }}</strong>
+        </div>
+        <div class="dashboard-dialog__metric-card">
+          <span>趋势峰值</span>
+          <strong class="dashboard-dialog__value md-number">{{ formatBytesPerSecond(speedPeak) }}</strong>
+        </div>
+        <div class="dashboard-dialog__metric-card">
+          <span>趋势均值</span>
+          <strong class="dashboard-dialog__value md-number">{{ formatBytesPerSecond(speedAverage) }}</strong>
+        </div>
+      </div>
+
+      <div class="dashboard-dialog__subsection">
+        <div class="dashboard-dialog__section-heading">
+          <strong>{{ speedTrendWindowLabel }}速率趋势</strong>
+          <span>所有在线节点聚合</span>
+        </div>
+        <DashboardTrendChart
+          :points="speedTrendPoints"
+          value-kind="rate"
+          :chart-label="`${speedTrendWindowLabel}网络速率趋势图，包含上行与下行`"
+          empty-text="暂无可绘制的网络速率数据"
+        />
+      </div>
+
+      <div v-if="currentSpeedNodes.length > 0" class="dashboard-dialog__subsection">
+        <div class="dashboard-dialog__section-heading">
+          <strong>实时速率较高节点</strong>
+          <span>按上下行合计</span>
+        </div>
+        <div class="dashboard-dialog__list">
+          <button
+            v-for="node in currentSpeedNodes"
+            :key="node.uuid"
+            class="dashboard-dialog__list-row dashboard-dialog__list-button"
+            type="button"
+            @click="openNode(node.uuid)"
+          >
+            <span class="dashboard-dialog__list-name">{{ node.name }}</span>
+            <span class="dashboard-dialog__list-meta">
+              ↓ {{ formatBytesPerSecond(node.down) }} · ↑ {{ formatBytesPerSecond(node.up) }}
+            </span>
+          </button>
+        </div>
+      </div>
+      <p v-else-if="nodeDataLoading" class="dashboard-dialog__empty" role="status">
+        正在读取网络速率…
+      </p>
+      <p v-else class="dashboard-dialog__empty">
+        当前没有产生网络速率的在线节点
+      </p>
+    </div>
+
     <div v-else-if="props.section === 'traffic'" class="dashboard-dialog__section">
       <div class="dashboard-dialog__metric-grid">
         <div class="dashboard-dialog__metric-card">
+          <span>近 24 小时下行</span>
+          <strong class="dashboard-dialog__value dashboard-tone--secondary md-number">{{ formatBytes(dashboardStore.trafficLast24Hours.down) }}</strong>
+        </div>
+        <div class="dashboard-dialog__metric-card">
+          <span>近 24 小时上行</span>
+          <strong class="dashboard-dialog__value dashboard-tone--primary md-number">{{ formatBytes(dashboardStore.trafficLast24Hours.up) }}</strong>
+        </div>
+        <div class="dashboard-dialog__metric-card">
           <span>累计下行</span>
-          <strong class="dashboard-dialog__value dashboard-tone--secondary md-number">{{ formatBytes(totalTraffic.down) }}</strong>
+          <strong class="dashboard-dialog__value md-number">{{ formatBytes(totalTraffic.down) }}</strong>
         </div>
         <div class="dashboard-dialog__metric-card">
           <span>累计上行</span>
-          <strong class="dashboard-dialog__value dashboard-tone--primary md-number">{{ formatBytes(totalTraffic.up) }}</strong>
+          <strong class="dashboard-dialog__value md-number">{{ formatBytes(totalTraffic.up) }}</strong>
         </div>
       </div>
       <p class="dashboard-dialog__status" :class="`dashboard-tone--${trafficStatus.tone}`" role="status">
         <span class="dashboard-dialog__status-dot" aria-hidden="true" />
         {{ trafficStatus.label }}
       </p>
-      <dl class="dashboard-dialog__detail-list">
-        <div class="dashboard-dialog__detail-row">
-          <dt>下行速率</dt>
-          <dd class="dashboard-tone--secondary md-number">
-            {{ formatBytesPerSecond(currentSpeed.down) }}
-          </dd>
+      <div class="dashboard-dialog__subsection">
+        <div class="dashboard-dialog__section-heading">
+          <strong>近 24 小时流量走势</strong>
+          <span>分时上下行用量</span>
         </div>
-        <div class="dashboard-dialog__detail-row">
-          <dt>上行速率</dt>
-          <dd class="dashboard-tone--primary md-number">
-            {{ formatBytesPerSecond(currentSpeed.up) }}
-          </dd>
-        </div>
-      </dl>
+        <DashboardTrendChart
+          :points="trafficTrendPoints"
+          value-kind="traffic"
+          chart-label="近 24 小时流量趋势图，包含上行与下行"
+          empty-text="暂无可绘制的近 24 小时流量数据"
+        />
+      </div>
       <div v-if="trafficNodeTotals.length > 0" class="dashboard-dialog__subsection">
         <div class="dashboard-dialog__section-heading">
           <strong>流量较高节点</strong>
