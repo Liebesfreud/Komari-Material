@@ -18,6 +18,7 @@ interface ModalState {
   title?: string
   content?: () => VNodeChild
   size: 'medium' | 'large'
+  className?: string
   closable: boolean
   closeOnEsc: boolean
   maskClosable: boolean
@@ -136,6 +137,7 @@ function setupMaterialTools() {
         title: options.title,
         content: options.content as (() => VNodeChild) | undefined,
         size: options.size ?? 'medium',
+        className: options.className,
         closable: options.closable ?? true,
         closeOnEsc: options.closeOnEsc ?? true,
         maskClosable: options.maskClosable ?? true,
@@ -277,7 +279,7 @@ onUnmounted(() => {
         <section
           ref="modalCard"
           class="material-modal-card"
-          :class="`material-modal-card--${activeModal.size}`"
+          :class="[`material-modal-card--${activeModal.size}`, activeModal.className]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="activeModal.title ? `material-modal-title-${activeModal.id}` : undefined"
@@ -420,6 +422,11 @@ onUnmounted(() => {
   max-height: min(90vh, 900px);
 }
 
+.material-modal-card--world-map {
+  /* 大屏使用约 85% 的视口宽度，同时不让窄屏比原有大号面板更小。 */
+  width: min(calc(100vw - 48px), max(1120px, 85vw));
+}
+
 .material-modal-card__header {
   display: flex;
   min-height: 64px;
@@ -446,6 +453,14 @@ onUnmounted(() => {
   min-height: 0;
   overflow: auto;
   padding: 8px 24px 24px;
+}
+
+.material-modal-card--world-map .material-modal-card__content {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .loading-bar-enter-active,
@@ -497,6 +512,10 @@ onUnmounted(() => {
 
   .material-modal-card--large {
     max-height: 88vh;
+  }
+
+  .material-modal-card--world-map {
+    width: 100%;
   }
 }
 </style>

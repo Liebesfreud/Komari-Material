@@ -48,6 +48,7 @@ function openExpandedMap(): void {
       },
     }),
     size: 'large',
+    className: 'material-modal-card--world-map',
   })
 }
 </script>

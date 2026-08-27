@@ -328,10 +328,15 @@ function handleNodeClick(node: NodeData): void {
   min-width: 0;
   max-height: min(64vh, 620px);
   overflow: auto;
+  scrollbar-width: none;
   border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 78%, transparent);
   border-radius: 24px;
   padding: 16px;
   background: var(--md-sys-color-surface-container);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .world-map-dialog__sidebar-header {

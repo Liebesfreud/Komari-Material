@@ -19,6 +19,7 @@ export interface MaterialModalOptions {
   title?: string
   content?: () => unknown
   size?: 'medium' | 'large'
+  className?: string
   closable?: boolean
   closeOnEsc?: boolean
   maskClosable?: boolean
