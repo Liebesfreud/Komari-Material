@@ -173,7 +173,7 @@ function openDetail(section: DetailSection): void {
   window.$modal.create({
     title: detailTitles[section],
     content: () => h(DashboardOverviewDialog, { section }),
-    size: 'medium',
+    size: 'large',
   })
 }
 

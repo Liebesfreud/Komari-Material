@@ -804,16 +804,20 @@ function openNode(uuid: string): void {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
   color: var(--md-sys-color-on-surface);
   font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
 }
 
 .dashboard-dialog__section {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .dashboard-dialog__data-notice {
@@ -840,10 +844,10 @@ function openNode(uuid: string): void {
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-app-card-radius);
-  padding: 16px;
+  padding: 20px;
   background: var(--md-sys-color-surface-container);
 }
 
@@ -909,8 +913,8 @@ function openNode(uuid: string): void {
 .dashboard-dialog__metric-grid,
 .dashboard-dialog__stat-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
 }
 
 .dashboard-dialog__stat-grid {
@@ -922,10 +926,10 @@ function openNode(uuid: string): void {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-app-card-radius-small);
-  padding: 12px;
+  padding: 18px;
   background: var(--md-sys-color-surface-container);
 }
 
@@ -1045,13 +1049,13 @@ function openNode(uuid: string): void {
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 48px;
+  min-height: 56px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 20px;
   border: 0;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  padding: 8px 0;
+  padding: 12px 4px;
   color: var(--md-sys-color-on-surface);
   background: transparent;
   text-align: left;
@@ -1126,7 +1130,7 @@ function openNode(uuid: string): void {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .dashboard-dialog__empty {
@@ -1150,6 +1154,21 @@ function openNode(uuid: string): void {
 }
 
 @media (max-width: 640px) {
+  .dashboard-dialog,
+  .dashboard-dialog__section {
+    gap: 18px;
+  }
+
+  .dashboard-dialog__metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-dialog__metric-card,
+  .dashboard-dialog__stat-grid > div {
+    padding: 14px;
+  }
+
   .dashboard-dialog__time-hero,
   .dashboard-dialog__summary-line {
     align-items: flex-start;

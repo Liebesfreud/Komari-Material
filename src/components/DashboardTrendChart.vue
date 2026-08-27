@@ -75,13 +75,18 @@ const chartTheme = computed(() => {
 const chartOption = computed(() => ({
   animationDuration: 260,
   color: [chartTheme.value.down, chartTheme.value.up],
-  grid: { top: 18, right: 10, bottom: 30, left: 14, containLabel: true },
+  textStyle: {
+    fontFamily: appStore.fontFamily,
+    fontSize: 13,
+  },
+  grid: { top: 26, right: 18, bottom: 34, left: 18, containLabel: true },
   legend: {
     top: 0,
-    right: 8,
-    itemWidth: 14,
-    itemHeight: 3,
-    textStyle: { color: chartTheme.value.muted, fontSize: 11 },
+    right: 12,
+    itemWidth: 16,
+    itemHeight: 4,
+    itemGap: 18,
+    textStyle: { color: chartTheme.value.muted, fontFamily: appStore.fontFamily, fontSize: 12 },
     data: ['下行', '上行'],
   },
   tooltip: {
@@ -89,7 +94,8 @@ const chartOption = computed(() => ({
     confine: true,
     backgroundColor: chartTheme.value.tooltip,
     borderColor: chartTheme.value.border,
-    textStyle: { color: chartTheme.value.text, fontSize: 12 },
+    padding: 12,
+    textStyle: { color: chartTheme.value.text, fontFamily: appStore.fontFamily, fontSize: 13 },
     axisPointer: {
       type: 'line',
       lineStyle: { color: chartTheme.value.border, type: 'dashed' },
@@ -115,7 +121,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: chartTheme.value.muted,
-      fontSize: 10,
+      fontFamily: appStore.numberFontFamily,
+      fontSize: 11,
       hideOverlap: true,
       formatter: (value: number) => formatTime(value),
     },
@@ -128,7 +135,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: chartTheme.value.muted,
-      fontSize: 10,
+      fontFamily: appStore.numberFontFamily,
+      fontSize: 11,
       formatter: (value: number) => formatAxisValue(value),
     },
     splitLine: { lineStyle: { color: chartTheme.value.split, type: 'dashed' } },
@@ -172,7 +180,7 @@ const chartOption = computed(() => ({
 .dashboard-trend {
   width: 100%;
   min-width: 0;
-  height: 238px;
+  height: 300px;
   overflow: hidden;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-app-card-radius);
@@ -202,7 +210,7 @@ const chartOption = computed(() => ({
 
 @media (max-width: 640px) {
   .dashboard-trend {
-    height: 210px;
+    height: 230px;
   }
 }
 </style>

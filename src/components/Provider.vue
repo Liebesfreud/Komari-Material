@@ -408,6 +408,11 @@ onUnmounted(() => {
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-high);
   box-shadow: var(--md-app-elevation-3);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
 }
 
 .material-modal-card--large {

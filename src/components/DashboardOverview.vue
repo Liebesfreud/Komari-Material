@@ -169,7 +169,7 @@ function openSectionDialog(section: DashboardSection): void {
   window.$modal.create({
     title: `${dialogTitles[section]}详情`,
     content: () => h(DashboardOverviewDialog, { section }),
-    size: 'medium',
+    size: 'large',
   })
 }
 
