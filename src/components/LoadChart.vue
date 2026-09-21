@@ -398,7 +398,7 @@ const cpuChartOption = computed(() => ({
       name: 'CPU %',
       nameTextStyle: { color: chartThemeColors.value.textSecondary, padding: [0, 40, 0, 0] },
       min: 0,
-      max: 100,
+      // 上限交给 ECharts 按当前数据自适应：低负载时曲线不会被压平，满载时仍封顶 100%
       axisLabel: { ...baseYAxisConfig.value.axisLabel, formatter: '{value}%' },
     },
     {
