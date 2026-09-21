@@ -228,7 +228,8 @@ function handleNodeClick(node: NodeData): void {
 <style scoped lang="scss">
 .world-map-dialog {
   min-width: 0;
-  --world-map-dialog-panel-height: min(64vh, 620px);
+  /* 地图高度的上限，同时决定地图的最大宽度（比例固定 2.13:1）。 */
+  --world-map-dialog-map-max-height: min(64vh, 620px);
 }
 
 .world-map-dialog__layout {
@@ -244,19 +245,19 @@ function handleNodeClick(node: NodeData): void {
   padding-top: 0;
 }
 
+/* 视口不再固定高度：地图高度跟随可用宽度，窗口变窄时不会在上下留下大片空白。 */
 .world-map-dialog__viewport {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--world-map-dialog-panel-height);
   min-width: 0;
   overflow: hidden;
   border-radius: 24px;
 }
 
 .world-map-dialog__chart {
-  width: min(100%, calc(var(--world-map-dialog-panel-height) * 2.13));
+  width: min(100%, calc(var(--world-map-dialog-map-max-height) * 2.13));
   aspect-ratio: 2.13 / 1;
   min-width: 0;
 
@@ -268,12 +269,14 @@ function handleNodeClick(node: NodeData): void {
 
 .world-map-dialog__empty {
   display: flex;
-  height: var(--world-map-dialog-panel-height);
+  width: min(100%, calc(var(--world-map-dialog-map-max-height) * 2.13));
+  aspect-ratio: 2.13 / 1;
   min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin-inline: auto;
   border: 1px dashed var(--md-sys-color-outline-variant);
   border-radius: 24px;
   color: var(--md-sys-color-on-surface-variant);
@@ -536,21 +539,10 @@ function handleNodeClick(node: NodeData): void {
   font-size: var(--md-sys-typescale-body-small-size);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1024px) {
+  /* 与首页栅格同一桌面断点：两栏会把地图压得比首页卡片还小，改单列让地图占满宽度。 */
   .world-map-dialog__layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  /* 窄屏下图表高度由宽度决定，容器改为自适应高度贴合图表，
-     否则固定 min(64vh, 620px) 会在地图上下留下大片空白。 */
-  .world-map-dialog__viewport,
-  .world-map-dialog__empty {
-    height: auto;
-    aspect-ratio: 2.13 / 1;
-  }
-
-  .world-map-dialog__chart {
-    width: 100%;
   }
 
   .world-map-dialog__sidebar {

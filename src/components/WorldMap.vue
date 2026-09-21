@@ -96,19 +96,26 @@ function openExpandedMap(): void {
 .world-map-card {
   display: block;
   min-width: 0;
+  /* 撑满栅格行高：两栏布局下与左侧卡片等高，不再在右列底部留空。 */
+  height: 100%;
   padding: 8px;
 }
 
 .world-map-card__body {
   min-width: 0;
+  height: 100%;
+  min-height: 0;
 }
 
 .world-map__viewport {
   position: relative;
   display: flex;
   justify-content: center;
-  /* 外层保持紧凑高度，实际地图由 .world-map__chart 保持正常比例。 */
-  aspect-ratio: 2.4 / 1;
+  /* 与地图本身一致的比例；栅格行更高时由 height 撑开，地图随之缩放。
+     width 固定为 100%：否则确定高度会把 2.13 比例反向换算成宽度并溢出卡片。 */
+  width: 100%;
+  aspect-ratio: 2.13 / 1;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -116,10 +123,8 @@ function openExpandedMap(): void {
 }
 
 .world-map__chart {
-  width: auto;
+  width: 100%;
   height: 100%;
-  aspect-ratio: 2.13 / 1;
-  max-width: 100%;
   min-width: 0;
 }
 
@@ -154,7 +159,9 @@ function openExpandedMap(): void {
 
 .world-map__empty {
   display: flex;
-  aspect-ratio: 2.4 / 1;
+  width: 100%;
+  aspect-ratio: 2.13 / 1;
+  height: 100%;
   min-height: 0;
   flex-direction: column;
   align-items: center;
@@ -185,11 +192,6 @@ function openExpandedMap(): void {
 @media (max-width: 520px) {
   .world-map-card {
     padding: 8px;
-  }
-
-  .world-map__viewport,
-  .world-map__empty {
-    aspect-ratio: 2.4 / 1;
   }
 
   .world-map__expand {

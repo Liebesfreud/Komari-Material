@@ -178,6 +178,8 @@ const appStore = useAppStore()
   display: flex;
   min-width: 0;
   flex-direction: column;
+  /* 与真实世界地图卡片一致：撑满栅格行高。 */
+  height: 100%;
   margin: 0 16px 16px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-app-card-radius);
@@ -192,7 +194,7 @@ const appStore = useAppStore()
 .home-skeleton__world-map-body {
   aspect-ratio: 2.13 / 1;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   border-radius: 24px;
 }
 
