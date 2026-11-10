@@ -331,7 +331,7 @@ onUnmounted(() => pauseRefreshTimer())
 }
 
 .general-info--comfortable .general-card {
-  min-height: var(--overview-comfortable-min-height, 260px);
+  min-height: 220px;
 }
 
 .general-card--traffic-unified {

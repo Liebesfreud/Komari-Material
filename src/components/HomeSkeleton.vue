@@ -16,9 +16,18 @@ const appStore = useAppStore()
         class="home-skeleton__general"
         :class="{ 'home-skeleton__general--comfortable': appStore.materialDensity === 'comfortable' }"
       >
-        <div v-for="index in appStore.topDataPanel === 'legacy' ? 5 : 6" :key="`general-${index}`" class="home-skeleton__general-card">
+        <div
+          v-for="index in appStore.topDataPanel === 'legacy' ? 5 : 6"
+          :key="`general-${index}`"
+          class="md-card home-skeleton__general-card"
+          :class="{ 'home-skeleton__general-card--speed': appStore.topDataPanel !== 'legacy' && index === 4 }"
+        >
           <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--lg" />
-          <div class="home-skeleton__pulse home-skeleton__line home-skeleton__line--sm" />
+          <div v-if="appStore.topDataPanel !== 'legacy' && index === 4" class="home-skeleton__speed">
+            <div class="home-skeleton__pulse home-skeleton__speed-value" />
+            <div class="home-skeleton__pulse home-skeleton__speed-chart" />
+          </div>
+          <div v-else class="home-skeleton__pulse home-skeleton__line home-skeleton__line--sm" />
         </div>
       </section>
 
@@ -178,12 +187,71 @@ const appStore = useAppStore()
 }
 
 .home-skeleton__general--comfortable .home-skeleton__general-card {
-  min-height: var(--overview-comfortable-min-height, 260px);
+  min-height: 220px;
 }
 
 @container overview (max-width: 740px) {
   .home-skeleton__general-card {
     @include overview.narrow-card;
+  }
+}
+
+// Mirror the speed card's content sizing without increasing the real cards' minimum height.
+.home-skeleton__general-card--speed {
+  container: overview-placeholder / inline-size;
+
+  > .home-skeleton__line--lg {
+    height: 28px;
+  }
+}
+
+.home-skeleton__speed {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 4px;
+}
+
+.home-skeleton__speed-value {
+  height: calc(28px * 1.3);
+  flex-shrink: 0;
+}
+
+.home-skeleton__speed-chart {
+  height: 64px;
+  flex-shrink: 0;
+}
+
+@container overview (max-width: 740px) {
+  .home-skeleton__speed-value {
+    height: calc(26px * 1.3);
+  }
+}
+
+@container overview-placeholder (max-width: 220px) {
+  .home-skeleton__general-card--speed > .home-skeleton__line--lg {
+    height: 22px;
+  }
+
+  .home-skeleton__speed-value {
+    height: calc(20px * 1.3);
+  }
+
+  .home-skeleton__speed-chart {
+    height: 52px;
+  }
+}
+
+@container overview-placeholder (max-width: 180px) {
+  .home-skeleton__general-card--speed > .home-skeleton__line--lg {
+    height: 18px;
+  }
+
+  .home-skeleton__speed-value {
+    height: calc(2 * 20px * 1.3 + 6px);
   }
 }
 
