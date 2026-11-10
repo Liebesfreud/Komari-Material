@@ -189,6 +189,10 @@ const appStore = useAppStore()
 .home-skeleton__general--comfortable .home-skeleton__general-card {
   min-height: 220px;
 
+  @media (max-width: 639px) {
+    min-height: 148px;
+  }
+
   @media (min-width: 1024px) {
     min-height: 152px;
   }
@@ -256,6 +260,16 @@ const appStore = useAppStore()
 
   .home-skeleton__speed-value {
     height: calc(2 * 20px * 1.3 + 6px);
+  }
+}
+
+@media (max-width: 639px) {
+  .home-skeleton__general-card--speed > .home-skeleton__line--lg {
+    height: calc(12px * 1.3);
+  }
+
+  .home-skeleton__speed-value {
+    height: calc(2 * 14px * 1.3 + 4px);
   }
 }
 

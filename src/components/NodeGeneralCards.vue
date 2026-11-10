@@ -19,6 +19,7 @@ type DetailSection = 'renewal' | 'network' | 'speed' | 'traffic'
 interface OverviewCard {
   kind: 'online' | 'traffic24' | 'renewal' | 'speed' | 'trafficTotal' | 'network'
   title: string
+  compactTitle?: string
   icon: string
   section?: DetailSection
   traffic?: {
@@ -116,6 +117,7 @@ const cards = computed<OverviewCard[]>(() => {
     {
       kind: 'traffic24',
       title: '近24小时流量',
+      compactTitle: '24h 流量',
       icon: 'swap_vert',
       section: 'traffic',
       traffic: {
@@ -216,7 +218,8 @@ onUnmounted(() => pauseRefreshTimer())
     >
       <div class="general-card__heading">
         <span class="material-symbols-rounded" aria-hidden="true">{{ card.icon }}</span>
-        <span>{{ card.title }}</span>
+        <span :class="{ 'general-card__full-title': card.compactTitle }">{{ card.title }}</span>
+        <span v-if="card.compactTitle" class="general-card__compact-title">{{ card.compactTitle }}</span>
       </div>
 
       <template v-if="card.kind === 'online'">
@@ -333,6 +336,10 @@ onUnmounted(() => pauseRefreshTimer())
 .general-info--comfortable .general-card {
   min-height: 220px;
 
+  @media (max-width: 639px) {
+    min-height: 148px;
+  }
+
   @media (min-width: 1024px) {
     min-height: 152px;
   }
@@ -340,6 +347,10 @@ onUnmounted(() => pauseRefreshTimer())
 
 .general-card--traffic-unified {
   --traffic-accent-up: var(--md-sys-color-primary);
+}
+
+.general-card__compact-title {
+  display: none;
 }
 
 .general-card__heading {
@@ -655,6 +666,91 @@ onUnmounted(() => pauseRefreshTimer())
 
   .general-card__support > span:last-child {
     text-wrap: balance;
+  }
+}
+
+@media (max-width: 639px) {
+  .general-card__heading {
+    font-size: 12px;
+
+    > .material-symbols-rounded,
+    .general-card__full-title {
+      display: none;
+    }
+  }
+
+  .general-card__compact-title {
+    display: inline;
+  }
+
+  .general-card__stat,
+  .general-card__amount,
+  .general-card__speed-metrics .general-card__amount {
+    --overview-number-size: 14px;
+    --overview-stat-size: 24px;
+    gap: 2px;
+  }
+
+  .general-card__stat {
+    padding-top: 0;
+    gap: 2px 4px;
+  }
+
+  .general-card__stat strong,
+  .general-card__amount strong {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .general-card__support {
+    min-height: 32px;
+    gap: 4px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .general-card__status-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .general-card__support-icon {
+    display: none;
+  }
+
+  .general-card__traffic {
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .general-card__traffic-row {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .general-card__direction .material-symbols-rounded,
+  .general-card__amount > .material-symbols-rounded {
+    font-size: 12px;
+  }
+
+  .general-card__speed-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+
+    .general-card__amount {
+      flex-wrap: wrap;
+    }
+  }
+
+  .general-card__node {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .general-card__node-name {
+    max-width: 100%;
   }
 }
 </style>

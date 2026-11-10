@@ -1,15 +1,16 @@
 // Keep the initial placeholders and the real overview on the same geometry.
 @mixin cards-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-auto-rows: 1fr;
   min-width: 0;
-  gap: 18px;
+  gap: 8px;
   padding: 12px;
   container: overview / inline-size;
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
   }
 
   @media (min-width: 1024px) {
@@ -30,6 +31,15 @@
   padding: 28px 24px 22px;
   border-radius: 18px;
 
+  @media (max-width: 639px) {
+    --overview-sparkline-height: 20px;
+    --overview-speed-gap: 4px;
+    min-height: 148px;
+    gap: 6px;
+    padding: 10px 8px;
+    border-radius: 12px;
+  }
+
   @media (min-width: 1024px) {
     --overview-sparkline-height: 32px;
     --overview-speed-gap: 8px;
@@ -40,7 +50,7 @@
 }
 
 @mixin narrow-card {
-  @media (max-width: 1023px) {
+  @media (min-width: 640px) and (max-width: 1023px) {
     min-height: 200px;
     gap: 16px;
     padding: 20px 16px 18px;
