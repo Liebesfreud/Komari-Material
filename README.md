@@ -124,12 +124,13 @@ VITE_API_BASE=/api
 
 ```bash
 pnpm dev       # 启动 Vite 开发服务器
+pnpm test      # 运行连接降级与初始化回归测试
 pnpm lint      # 使用 oxlint 和 eslint 检查并修复代码风格
 pnpm build     # 类型检查、生产构建并生成 Komari 主题包
 pnpm preview   # 预览生产构建结果
 ```
 
-仓库目前没有独立测试套件，提交前请至少运行 `pnpm lint` 和 `pnpm build`。
+提交前请运行 `pnpm test`、`pnpm lint` 和 `pnpm build`。字体子集维护与 Cloudflare 缓存配置见 [加载性能说明](docs/performance.md)。
 
 ## 项目结构
 
