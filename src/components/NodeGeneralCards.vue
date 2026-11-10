@@ -332,6 +332,10 @@ onUnmounted(() => pauseRefreshTimer())
 
 .general-info--comfortable .general-card {
   min-height: 220px;
+
+  @media (min-width: 1024px) {
+    min-height: 152px;
+  }
 }
 
 .general-card--traffic-unified {
@@ -491,11 +495,11 @@ onUnmounted(() => pauseRefreshTimer())
   flex: 1;
   flex-direction: column;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--overview-speed-gap, 20px);
   padding-top: 4px;
 
   .rate-sparkline {
-    height: 64px;
+    height: var(--overview-sparkline-height, 64px);
   }
 
   :deep(.rate-sparkline__line) {
@@ -611,7 +615,7 @@ onUnmounted(() => pauseRefreshTimer())
   }
 
   .general-card__speed .rate-sparkline {
-    height: 52px;
+    height: var(--overview-sparkline-height, 52px);
   }
 }
 

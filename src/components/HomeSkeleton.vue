@@ -188,6 +188,10 @@ const appStore = useAppStore()
 
 .home-skeleton__general--comfortable .home-skeleton__general-card {
   min-height: 220px;
+
+  @media (min-width: 1024px) {
+    min-height: 152px;
+  }
 }
 
 @container overview (max-width: 740px) {
@@ -211,7 +215,7 @@ const appStore = useAppStore()
   flex: 1;
   flex-direction: column;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--overview-speed-gap, 20px);
   padding-top: 4px;
 }
 
@@ -221,7 +225,7 @@ const appStore = useAppStore()
 }
 
 .home-skeleton__speed-chart {
-  height: 64px;
+  height: var(--overview-sparkline-height, 64px);
   flex-shrink: 0;
 }
 
@@ -241,7 +245,7 @@ const appStore = useAppStore()
   }
 
   .home-skeleton__speed-chart {
-    height: 52px;
+    height: var(--overview-sparkline-height, 52px);
   }
 }
 
