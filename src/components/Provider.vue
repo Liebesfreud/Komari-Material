@@ -3,7 +3,7 @@ import type { PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { applyMaterialThemeTokens } from '@/utils/materialTheme'
-import '@/utils/materialWeb'
+import '@material/web/progress/linear-progress.js'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { useIntervalFn } from '@vueuse/core'
-import { computed, h, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
-import DashboardOverviewDialog from '@/components/DashboardOverviewDialog.vue'
+import { computed, defineAsyncComponent, h, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
 import RateSparkline from '@/components/RateSparkline.vue'
 import { useAppStore } from '@/stores/app'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -11,6 +10,7 @@ import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
 import { getDaysUntilExpired } from '@/utils/tagHelper'
 
 const EXPIRING_SOON_DAYS = 7
+const DashboardOverviewDialog = defineAsyncComponent(() => import('@/components/DashboardOverviewDialog.vue'))
 // 沿用 Komari 1.4.1 的黄色预警边界，统计需要关注的波动节点。
 const NETWORK_VOLATILITY_THRESHOLD = 0.3
 
@@ -305,48 +305,24 @@ onUnmounted(() => pauseRefreshTimer())
 </template>
 
 <style scoped lang="scss">
+@use '@/styles/overview-layout' as overview;
+
 .general-info {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 1fr;
-  min-width: 0;
-  gap: 18px;
-  padding: 12px;
-  container: overview / inline-size;
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  @include overview.cards-grid;
 }
 
 .general-card {
+  @include overview.card;
   --overview-number-size: 28px;
   --overview-stat-size: 40px;
   --traffic-accent-down: var(--md-sys-color-primary);
   --traffic-accent-up: var(--md-chart-success);
-  display: flex;
-  min-width: 0;
-  min-height: 210px;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 20px;
-  margin: 0;
-  padding: 28px 24px 22px;
-  border-radius: 18px;
   background: color-mix(in srgb, var(--md-sys-color-surface-container) 97%, var(--md-ref-seed-color));
   font: inherit;
   letter-spacing: 0;
   text-align: left;
   appearance: none;
   container: overview-card / inline-size;
-
-  @media (min-width: 1024px) {
-    aspect-ratio: 1.275;
-  }
 
   &:focus-visible {
     outline: 3px solid color-mix(in srgb, var(--md-sys-color-primary) 48%, transparent);
@@ -355,7 +331,7 @@ onUnmounted(() => pauseRefreshTimer())
 }
 
 .general-info--comfortable .general-card {
-  min-height: 220px;
+  min-height: var(--overview-comfortable-min-height, 260px);
 }
 
 .general-card--traffic-unified {
@@ -571,12 +547,9 @@ onUnmounted(() => pauseRefreshTimer())
 
 @container overview (max-width: 740px) {
   .general-card {
+    @include overview.narrow-card;
     --overview-number-size: 26px;
     --overview-stat-size: 32px;
-    min-height: 200px;
-    aspect-ratio: auto;
-    gap: 16px;
-    padding: 20px 16px 18px;
   }
 }
 

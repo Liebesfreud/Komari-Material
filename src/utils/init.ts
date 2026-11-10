@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: Required<InitConfig> = {
 }
 
 /** 初始化状态管理 */
-class InitManager {
+export class InitManager {
   private config: Required<InitConfig>
   private rpc: KomariRpc
   private appStore: ReturnType<typeof useAppStore>
@@ -205,13 +205,14 @@ class InitManager {
    * 并行拉取首屏所需的配置、用户与节点数据
    */
   private async fetchBootstrapData(): Promise<void> {
+    // 用户信息只影响登录入口，不阻塞公开节点的首屏展示。
+    void this.fetchUserInfo()
     const results = await Promise.allSettled([
       this.fetchPublicSettings(),
-      this.fetchUserInfo(),
       this.fetchNodesData(),
     ])
 
-    const nodesResult = results[2]
+    const nodesResult = results[1]
     if (nodesResult.status === 'rejected') {
       throw nodesResult.reason
     }
@@ -301,8 +302,8 @@ class InitManager {
 
     const client = this.rpc.getClient()
 
-    // 切换到 WebSocket 模式
-    client.setTransport(true)
+    // 握手和 ping 验证期间继续用 HTTP 刷新数据。
+    client.setTransport(false)
     this.nodesStore.updateWsState('connecting', this.nodesStore.wsReconnectAttempts)
 
     try {
@@ -314,6 +315,7 @@ class InitManager {
       }
 
       this.clearReconnectTimer()
+      client.setTransport(true)
       this.nodesStore.updateWsState('connected', 0)
       this.postFailureCount = 0
 
@@ -329,6 +331,7 @@ class InitManager {
       }
 
       console.error('[InitManager] WebSocket connection failed:', error)
+      client.close()
       this.nodesStore.updateWsState('disconnected')
       this.scheduleReconnect()
     }
@@ -348,6 +351,7 @@ class InitManager {
     ws.addEventListener('close', () => {
       // 如果当前是已连接状态且还在使用 WebSocket 模式，触发重连
       if (this.useWebSocket === true && this.nodesStore.wsConnectionState === 'connected') {
+        client.setTransport(false)
         this.nodesStore.updateWsState('disconnected')
         this.scheduleReconnect()
       }
@@ -504,6 +508,7 @@ class InitManager {
   async reconnectAfterLogin(): Promise<void> {
     this.clearReconnectTimer()
     const client = this.rpc.getClient()
+    client.setTransport(false)
 
     // 关闭现有 WebSocket 连接
     if (client.getWsReadyState() !== WebSocket.CLOSED) {

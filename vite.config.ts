@@ -70,24 +70,6 @@ function injectMaterialSymbolsFontHints(distDir: string) {
     return
   }
 
-  for (const file of assetFiles) {
-    if (!file.endsWith('.css')) {
-      continue
-    }
-
-    const cssPath = resolve(assetsDir, file)
-    const css = fs.readFileSync(cssPath, 'utf-8') as string
-
-    if (!css.includes('Material Symbols Rounded')) {
-      continue
-    }
-
-    const patchedCss = css.replace(/font-display:\s*block/g, 'font-display:swap')
-    if (patchedCss !== css) {
-      fs.writeFileSync(cssPath, patchedCss)
-    }
-  }
-
   const fontHref = `/assets/${materialSymbolsFont}`
   const preloadLink = `<link rel="preload" href="${fontHref}" as="font" type="font/woff2" crossorigin>`
   const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8') as string
@@ -138,6 +120,7 @@ function komariThemeZip(): Plugin {
       }
 
       injectMaterialSymbolsFontHints(distDir)
+      fs.copyFileSync(resolve(__dirname, 'src/assets/fonts/LICENSE.txt'), resolve(distDir, 'assets/material-symbols-LICENSE.txt'))
 
       const output = fs.createWriteStream(outputPath)
       const archive = archiver('zip', { zlib: { level: 9 } })
@@ -201,6 +184,15 @@ export default defineConfig(({ mode }) => {
       }),
       vueDevTools(),
       UnoCSS(),
+      {
+        name: 'optional-cjk-font-display',
+        enforce: 'pre',
+        transform(code, id) {
+          if (id.replaceAll('\\', '/').includes('/@fontsource-variable/noto-sans-sc/') && id.endsWith('.css')) {
+            return code.replace(/font-display:\s*swap/g, 'font-display:optional')
+          }
+        },
+      },
       komariThemeZip(),
     ],
     resolve: {
@@ -219,15 +211,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
-            'echarts': ['echarts', 'vue-echarts'],
-            'material-web': [
-              '@material/web/button/filled-button.js',
-              '@material/web/button/outlined-button.js',
-              '@material/web/button/text-button.js',
-              '@material/web/progress/circular-progress.js',
-              '@material/web/progress/linear-progress.js',
-              '@material/web/textfield/outlined-text-field.js',
-            ],
             'vueuse': ['@vueuse/core'],
           },
         },

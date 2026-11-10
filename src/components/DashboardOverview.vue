@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { useIntervalFn, useNow } from '@vueuse/core'
-import { computed, h, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
-import DashboardOverviewDialog from '@/components/DashboardOverviewDialog.vue'
+import { computed, defineAsyncComponent, h, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useNodesStore } from '@/stores/nodes'
@@ -11,6 +10,7 @@ import { getRegionDisplayName } from '@/utils/regionHelper'
 import { getDaysUntilExpired } from '@/utils/tagHelper'
 
 type DashboardSection = 'time' | 'online' | 'network' | 'traffic' | 'renewal'
+const DashboardOverviewDialog = defineAsyncComponent(() => import('@/components/DashboardOverviewDialog.vue'))
 
 interface RegionSummary {
   key: string

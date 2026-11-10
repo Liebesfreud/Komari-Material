@@ -23,7 +23,9 @@ const appStore = useAppStore()
       </section>
 
       <section v-if="appStore.topDataPanel !== 'legacy'" class="home-skeleton__world-map">
-        <div class="home-skeleton__pulse home-skeleton__world-map-body" />
+        <article class="md-card home-skeleton__world-map-card">
+          <div class="home-skeleton__pulse home-skeleton__world-map-body" />
+        </article>
       </section>
     </div>
 
@@ -64,6 +66,8 @@ const appStore = useAppStore()
 </template>
 
 <style scoped lang="scss">
+@use '@/styles/overview-layout' as overview;
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -100,18 +104,7 @@ const appStore = useAppStore()
 }
 
 .home-skeleton__general {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: var(--md-app-grid-gap);
-  padding: 16px;
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  @include overview.cards-grid;
 }
 
 .home-skeleton__overview {
@@ -123,13 +116,13 @@ const appStore = useAppStore()
     align-items: stretch;
 
     .home-skeleton__general {
-      height: 100%;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding-right: 8px;
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
-    .home-skeleton__general-card {
-      min-height: 0;
+    .home-skeleton__world-map {
+      padding-left: 8px;
+      padding-top: 12px;
     }
   }
 
@@ -137,65 +130,79 @@ const appStore = useAppStore()
     display: block;
 
     .home-skeleton__general {
+      gap: var(--md-app-grid-gap);
+      padding: 16px;
+      container: none;
       height: auto;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: auto;
       grid-template-rows: none;
+
+      @media (min-width: 640px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      @media (min-width: 1024px) {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
     }
 
     .home-skeleton__general-card {
-      min-height: 132px;
+      min-height: var(--md-app-row-height);
+      aspect-ratio: auto;
+      flex-direction: row-reverse;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: var(--md-app-card-radius);
+
+      @media (min-width: 640px) {
+        min-height: 132px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--md-app-card-padding);
+      }
+    }
+
+    .home-skeleton__general--comfortable .home-skeleton__general-card {
+      @media (min-width: 640px) {
+        min-height: 150px;
+      }
     }
   }
 }
 
 .home-skeleton__general-card {
-  display: flex;
-  min-height: var(--md-app-row-height);
-  flex-direction: row-reverse;
-  align-items: center;
+  @include overview.card;
   justify-content: space-between;
-  gap: 16px;
-  border-radius: var(--md-app-card-radius);
-  padding: 12px 14px;
   background: var(--md-sys-color-surface-container);
-
-  @media (min-width: 640px) {
-    min-height: 132px;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: var(--md-app-card-padding);
-  }
 }
 
 .home-skeleton__general--comfortable .home-skeleton__general-card {
-  @media (min-width: 640px) {
-    min-height: 150px;
+  min-height: var(--overview-comfortable-min-height, 260px);
+}
+
+@container overview (max-width: 740px) {
+  .home-skeleton__general-card {
+    @include overview.narrow-card;
   }
 }
 
 .home-skeleton__world-map {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  /* 与真实世界地图卡片一致：撑满栅格行高。 */
-  height: 100%;
-  margin: 0 16px 16px;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-app-card-radius);
-  padding: var(--md-app-card-padding);
-  background: var(--md-sys-color-surface-container);
+  padding: 0 16px 12px;
+}
 
-  @media (min-width: 1024px) {
-    margin-top: 16px;
-  }
+.home-skeleton__world-map-card {
+  height: 100%;
+  min-width: 0;
+  padding: 8px;
 }
 
 .home-skeleton__world-map-body {
   aspect-ratio: 2.13 / 1;
+  height: 100%;
   min-height: 0;
   flex: 1 1 auto;
-  border-radius: 24px;
+  border-radius: var(--md-app-card-radius, 24px);
 }
 
 .home-skeleton__divider {
@@ -351,6 +358,12 @@ const appStore = useAppStore()
 @keyframes home-skeleton-shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-skeleton__pulse::after {
+    animation: none;
   }
 }
 </style>

@@ -5,6 +5,7 @@ import VChart from 'vue-echarts'
 import { useAppStore } from '@/stores/app'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
 import { getSharedRpc } from '@/utils/rpc'
+import '@material/web/progress/circular-progress.js'
 import '@/utils/echarts' // 共享 ECharts 配置
 
 const props = defineProps<{

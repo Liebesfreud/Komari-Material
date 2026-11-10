@@ -4,8 +4,7 @@ import App from './App.vue'
 import router from './router'
 
 import '@fontsource-variable/noto-sans-sc'
-import '@fontsource-variable/roboto'
-import '@material-symbols/font-400/rounded.css'
+import './styles/fonts.css'
 import './styles/main.scss'
 import 'virtual:uno.css'
 

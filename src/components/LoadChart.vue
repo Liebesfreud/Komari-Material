@@ -10,6 +10,7 @@ import { getSharedApi } from '@/utils/api'
 import { formatBytes, formatBytesSplit } from '@/utils/helper'
 import { fillMissingTimePoints } from '@/utils/recordHelper'
 import { getSharedRpc } from '@/utils/rpc'
+import '@material/web/progress/circular-progress.js'
 import '@/utils/echarts' // 共享 ECharts 配置
 
 const props = defineProps<{

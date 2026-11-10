@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import '@material/web/progress/circular-progress.js'
+</script>
+
 <template>
   <div class="loading-cover" role="status" aria-live="polite">
     <md-circular-progress class="loading-cover__progress" indeterminate aria-label="Loading" />

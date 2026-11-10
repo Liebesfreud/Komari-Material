@@ -6,6 +6,7 @@ import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
+import '@material/web/button/filled-button.js'
 
 const LoadChart = defineAsyncComponent(() => import('@/components/LoadChart.vue'))
 const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))

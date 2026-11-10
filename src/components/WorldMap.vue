@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import { computed, defineAsyncComponent, h } from 'vue'
-import WorldMapChart from '@/components/WorldMapChart.vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { computed, defineAsyncComponent, h, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getWorldMapMarkers } from '@/utils/worldMap'
@@ -11,6 +11,17 @@ const emit = defineEmits<{
 }>()
 
 const WorldMapDialog = defineAsyncComponent(() => import('@/components/WorldMapDialog.vue'))
+const WorldMapChart = defineAsyncComponent(() => import('@/components/WorldMapChart.vue'))
+const mapSection = ref<HTMLElement | null>(null)
+const chartVisible = ref(false)
+const chartReady = ref(false)
+const { isSupported, stop } = useIntersectionObserver(mapSection, ([entry]) => {
+  if (entry?.isIntersecting) {
+    chartVisible.value = true
+    stop()
+  }
+}, { rootMargin: '160px' })
+const shouldLoadChart = computed(() => chartVisible.value || !isSupported.value)
 
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
@@ -54,7 +65,7 @@ function openExpandedMap(): void {
 </script>
 
 <template>
-  <section class="world-map-section">
+  <section ref="mapSection" class="world-map-section">
     <article
       class="md-card world-map-card"
       :class="[{ 'md-surface-glass': hasBackgroundBlur }, cardBlurClass]"
@@ -62,8 +73,16 @@ function openExpandedMap(): void {
     >
       <div class="world-map-card__body">
         <div v-if="regionMarkers.length > 0" class="world-map__viewport">
-          <div class="world-map__chart">
-            <WorldMapChart :markers="regionMarkers" @node-click="handleNodeClick" />
+          <div class="world-map__chart" :aria-busy="!chartReady">
+            <WorldMapChart
+              v-if="shouldLoadChart"
+              :markers="regionMarkers"
+              @node-click="handleNodeClick"
+              @vue:mounted="chartReady = true"
+            />
+            <div v-if="!chartReady" class="world-map__loading" role="status">
+              正在加载地图
+            </div>
           </div>
 
           <button
@@ -123,9 +142,19 @@ function openExpandedMap(): void {
 }
 
 .world-map__chart {
+  position: relative;
   width: 100%;
   height: 100%;
   min-width: 0;
+}
+
+.world-map__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-low);
 }
 
 /* Small FAB：40dp、12dp 圆角、surface 容器色、elevation-1。 */

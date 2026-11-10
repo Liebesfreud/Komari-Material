@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import HomeSkeleton from '@/components/HomeSkeleton.vue'
+import LegacyNodeGeneralCards from '@/components/LegacyNodeGeneralCards.vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import NodeCard from '@/components/NodeCard.vue'
+import NodeCompactList from '@/components/NodeCompactList.vue'
+import NodeGeneralCards from '@/components/NodeGeneralCards.vue'
+import NodeList from '@/components/NodeList.vue'
+import WorldMap from '@/components/WorldMap.vue'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { isRegionMatch } from '@/utils/regionHelper'
@@ -11,13 +17,6 @@ import { isRegionMatch } from '@/utils/regionHelper'
 defineOptions({
   name: 'HomeView',
 })
-
-const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
-const NodeCompactList = defineAsyncComponent(() => import('@/components/NodeCompactList.vue'))
-const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
-const LegacyNodeGeneralCards = defineAsyncComponent(() => import('@/components/LegacyNodeGeneralCards.vue'))
-const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
-const WorldMap = defineAsyncComponent(() => import('@/components/WorldMap.vue'))
 
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
@@ -144,7 +143,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
     <HomeSkeleton v-if="appStore.loading" />
 
     <template v-else>
-      <div v-if="appStore.connectionError" class="home-view__alert-wrap">
+      <div v-if="appStore.connectionError" class="home-view__connection-error" role="alert">
         <div class="md-alert md-alert--error">
           <span class="material-symbols-rounded">error</span>
           <div>
@@ -280,6 +279,18 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 <style scoped lang="scss">
 .home-view__alert-wrap {
   padding: 8px 16px;
+}
+
+.home-view__connection-error {
+  position: fixed;
+  z-index: 100;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(480px, calc(100vw - 32px));
+  max-height: 40vh;
+  overflow: auto;
+  box-shadow: var(--md-app-elevation-2);
+  border-radius: var(--md-app-card-radius);
 }
 
 .home-view__overview {

@@ -501,7 +501,8 @@ export class RpcClient {
     params?: Record<string, unknown> | unknown[],
     timeoutMs = this.timeout,
   ): Promise<T> {
-    if (this.useWebSocket) {
+    // A disconnected socket must not stall ordinary reads while InitManager reconnects.
+    if (this.useWebSocket && this.ws?.readyState === WebSocket.OPEN) {
       return this.callWebSocket<T>(method, params, timeoutMs)
     }
     return this.callHttp<T>(method, params, timeoutMs)

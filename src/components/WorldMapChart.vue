@@ -10,7 +10,7 @@ import VChart from 'vue-echarts'
 import worldAtlas from 'world-atlas/countries-110m.json'
 import WorldMapNodeMenu from '@/components/WorldMapNodeMenu.vue'
 import { useAppStore } from '@/stores/app'
-import '@/utils/echarts'
+import '@/utils/echarts-map'
 
 const props = defineProps<{
   markers: WorldMapMarker[]
